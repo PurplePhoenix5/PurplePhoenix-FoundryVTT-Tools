@@ -29,28 +29,43 @@ Hooks.once('init', () => {
 
 // Core overlay logic (called after every _drawBar)
 function applyHPText(token, result, number, bar, data) {
-    if (!isHPBar(bar)) return;
+    // 1. V13 Fix: Tolerantere Prüfung, ob es der HP-Balken ist (fängt auch system.attributes.hp ab)
+    if (!bar?.attribute?.includes('hp')) return;
     if (!isPC(token)) return;
     if (!data || data.value == null || data.max == null) return;
 
     const text = `${data.value} / ${data.max}`;
 
-    if (token._hpText) {
-        token._hpText.text = text;
-        // Style in PIXI v8 direkt zuweisen, anstatt Object.assign zu nutzen
-        token._hpText.style = getStyle();
+    // 2. V13 Fix: Alten Text sauber zerstören, bevor wir neu zeichnen (verhindert Geister-Texte)
+    if (token._hpText && !token._hpText.destroyed) {
+        token._hpText.destroy({ children: true });
+    }
+
+    // Text neu erstellen mit PIXI v8 Syntax
+    token._hpText = new PIXI.Text({ text: text, style: getStyle() });
+    token._hpText.anchor.set(0.5, 0.5);
+
+    // 3. V13 Fix: In den Balken-Container (token.bars) einfügen, nicht ins nackte Token!
+    if (token.bars) {
+        token.bars.addChild(token._hpText);
     } else {
-        // PIXI v8 Konstruktor verwendet nun ein Options-Objekt
-        token._hpText = new PIXI.Text({ text: text, style: getStyle() });
-        token._hpText.anchor.set(0.5, 0.5);
-        token.addChild(token._hpText);
+        token.addChild(token._hpText); // Fallback
     }
 
     const idx = typeof number === 'number' ? number : (number === 'bar2' ? 1 : 0);
-    const barH = Math.max(canvas.dimensions.size / 12, 8);
-    const barTop = idx === 0 ? token.h - barH : token.h - (2 * barH) - 2;
 
-    token._hpText.x = token.w / 2;
+    // 4. V13 Fix: canvas.dimensions.size ist veraltet. Wir nutzen canvas.grid.size
+    const gridSize = canvas?.grid?.size || 100;
+    const barH = Math.max(gridSize / 12, 8);
+
+    // token.h und token.w sicherheitshalber fallbacken, falls sie fehlen
+    const tokenH = token.h || (token.document.height * gridSize);
+    const tokenW = token.w || (token.document.width * gridSize);
+
+    const barTop = idx === 0 ? tokenH - barH : tokenH - (2 * barH) - 2;
+
+    // Text exakt mittig im jeweiligen Balken positionieren
+    token._hpText.x = tokenW / 2;
     token._hpText.y = barTop + barH / 2;
 }
 
@@ -75,7 +90,9 @@ Hooks.once('ready', () => {
 });
 
 Hooks.on('destroyToken', token => {
-    token._hpText?.destroy({ children: true });
+    if (token._hpText && !token._hpText.destroyed) {
+        token._hpText.destroy({ children: true });
+    }
     token._hpText = null;
 });
 
@@ -101,11 +118,7 @@ function getStyle() {
     });
 }
 
-function isHPBar(bar) {
-    const a = bar?.attribute;
-    return a && (a === 'attributes.hp' || a === 'hp' || a.endsWith('.attributes.hp'));
-}
-
 function isPC(token) {
+    // Sicherheitshalber auch überprüfen, ob actor überhaupt existiert
     return token?.document?.actor?.type === 'character';
 }
