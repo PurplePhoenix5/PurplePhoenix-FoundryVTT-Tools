@@ -2,8 +2,8 @@
   "id": "PurplePhoenix-FVTT-Tools",
   "title": "PurplePhoenix FVTT Tools",
   "description": "A collection of small quality-of-life modules for Foundry VTT.",
-  "authors": [{ "name": "PurplePhoenic" }],
-  "version": "1.0.6",
+  "authors": [{ "name": "PurplePhoenix" }],
+  "version": "1.1.0",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
