@@ -26,99 +26,104 @@ Hooks.once('init', () => {
     });
 });
 
+// Die V13-konforme Kern-Logik
+function drawBarsWrapper(wrapped, ...args) {
+    // 1. Lass Foundry V13 den Balken nativ zeichnen (inklusive bar.clear() und Positionierung)
+    const result = wrapped.call(this, ...args);
 
-// Core overlay logic (called after every _drawBar)
-function applyHPText(token, result, number, bar, data) {
-    // 1. V13 Fix: Tolerantere Prüfung, ob es der HP-Balken ist (fängt auch system.attributes.hp ab)
-    if (!bar?.attribute?.includes('hp')) return;
-    if (!isPC(token)) return;
-    if (!data || data.value == null || data.max == null) return;
+    try {
+        // Falls Token ausgeblendet sind oder gar keine Bars haben, überspringen
+        if (!this.actor || this.document.displayBars === CONST.TOKEN_DISPLAY_MODES.NONE) return result;
 
-    const text = `${data.value} / ${data.max}`;
+        // Foundry V13 iteriert intern über bar1 und bar2
+        ["bar1", "bar2"].forEach((b) => {
+            const bar = this.bars[b];
+            const attr = this.document.getBarAttribute(b);
 
-    // 2. V13 Fix: Alten Text sauber zerstören, bevor wir neu zeichnen (verhindert Geister-Texte)
-    if (token._hpText && !token._hpText.destroyed) {
-        token._hpText.destroy({ children: true });
+            // Wenn Balken ungültig, unsichtbar oder kein Bar-Typ, Text ausblenden
+            if (!attr || attr.type !== "bar" || attr.max === 0 || !bar.visible) {
+                if (bar._hpText) bar._hpText.visible = false;
+                return;
+            }
+
+            // Prüfen, ob das Attribut Lebenspunkte trackt
+            const isHP = attr.attribute && (attr.attribute.toLowerCase().includes('hp') || attr.attribute.toLowerCase().includes('health'));
+            if (!isHP) {
+                if (bar._hpText) bar._hpText.visible = false;
+                return;
+            }
+
+            const text = `${attr.value} / ${attr.max}`;
+
+            // 2. Text als Child des Graphics-Balkens hinzufügen
+            if (!bar._hpText || bar._hpText.destroyed) {
+                // Foundry V13 PIXI Syntax
+                bar._hpText = new PIXI.Text(text, getStyle());
+                bar._hpText.anchor.set(0.5, 0.5);
+                bar.addChild(bar._hpText);
+            } else {
+                bar._hpText.text = text;
+                bar._hpText.style = getStyle();
+                bar._hpText.visible = true; // Wieder anzeigen, falls vorher ausgeblendet
+            }
+
+            // Sicherstellen, dass die Grafik nicht unseren Text überdeckt
+            bar.sortableChildren = true;
+            bar._hpText.zIndex = 100;
+
+            // 3. Exakte Koordinaten der V13-Engine berechnen
+            const { width, height } = this.document.getSize();
+            const s = canvas.dimensions?.uiScale || 1;
+            const bw = width;
+            const bh = 8 * (this.document.height >= 2 ? 1.5 : 1) * s;
+
+            // Da der Text direkt im Balken-Container liegt, ist (0,0) die obere linke Ecke des Balkens
+            bar._hpText.x = bw / 2;
+            bar._hpText.y = bh / 2;
+        });
+    } catch (err) {
+        console.error(`${MODULE_ID} | Fehler beim Zeichnen der HP:`, err);
     }
 
-    // Text neu erstellen mit PIXI v8 Syntax
-    token._hpText = new PIXI.Text({ text: text, style: getStyle() });
-    token._hpText.anchor.set(0.5, 0.5);
-
-    // 3. V13 Fix: In den Balken-Container (token.bars) einfügen, nicht ins nackte Token!
-    if (token.bars) {
-        token.bars.addChild(token._hpText);
-    } else {
-        token.addChild(token._hpText); // Fallback
-    }
-
-    const idx = typeof number === 'number' ? number : (number === 'bar2' ? 1 : 0);
-
-    // 4. V13 Fix: canvas.dimensions.size ist veraltet. Wir nutzen canvas.grid.size
-    const gridSize = canvas?.grid?.size || 100;
-    const barH = Math.max(gridSize / 12, 8);
-
-    // token.h und token.w sicherheitshalber fallbacken, falls sie fehlen
-    const tokenH = token.h || (token.document.height * gridSize);
-    const tokenW = token.w || (token.document.width * gridSize);
-
-    const barTop = idx === 0 ? tokenH - barH : tokenH - (2 * barH) - 2;
-
-    // Text exakt mittig im jeweiligen Balken positionieren
-    token._hpText.x = tokenW / 2;
-    token._hpText.y = barTop + barH / 2;
-}
-
-async function drawBarWrapper(wrapped, ...args) {
-    const result = await wrapped(...args);
-    applyHPText(this, result, ...args);
     return result;
 }
 
 // Patching & cleanup 
 Hooks.once('ready', () => {
-    if (typeof libWrapper === 'function') {
-        libWrapper.register(MODULE_ID, 'Token.prototype._drawBar', drawBarWrapper, 'WRAPPER');
+    // V13 Token Pfad für libWrapper
+    const target = 'foundry.canvas.placeables.Token.prototype.drawBars';
+    const TokenClass = foundry.canvas.placeables.Token;
+
+    if (typeof libWrapper !== 'undefined') {
+        libWrapper.register(MODULE_ID, target, drawBarsWrapper, 'WRAPPER');
     } else {
-        const orig = Token.prototype._drawBar;
-        Token.prototype._drawBar = function (...args) {
-            return drawBarWrapper.call(this, orig.bind(this), ...args);
+        const orig = TokenClass.prototype.drawBars;
+        TokenClass.prototype.drawBars = function (...args) {
+            return drawBarsWrapper.call(this, orig, ...args);
         };
     }
-    // V13 kompatibles Neuladen der Token-Bars
-    canvas?.tokens?.placeables?.forEach(t => t.renderFlags?.set({ refresh: true }));
-});
 
-Hooks.on('destroyToken', token => {
-    if (token._hpText && !token._hpText.destroyed) {
-        token._hpText.destroy({ children: true });
+    // Token-Balken sauber neu laden (V13 RenderFlags)
+    if (canvas?.ready) {
+        canvas.tokens.placeables.forEach(t => t.renderFlags?.set({ refreshBars: true }));
     }
-    token._hpText = null;
 });
 
-// Reapply on setting changes without requiring a scene reload
+// Bei Änderungen der Settings die Balken frisch rendern
 Hooks.on('updateSetting', setting => {
-    if (setting.key.startsWith(`${MODULE_ID}.`)) {
-        // V13 kompatibles Neuladen
-        canvas?.tokens?.placeables?.forEach(t => t.renderFlags?.set({ refresh: true }));
+    if (setting.key.startsWith(`${MODULE_ID}.`) && canvas?.ready) {
+        canvas.tokens.placeables.forEach(t => t.renderFlags?.set({ refreshBars: true }));
     }
 });
-
-// ---
 
 // Helpers 
 function getStyle() {
     return new PIXI.TextStyle({
-        fontFamily: 'Arial, sans-serif',
+        fontFamily: 'Signika, Arial, sans-serif',
         fontSize: game.settings.get(MODULE_ID, 'fontSize'),
         fill: game.settings.get(MODULE_ID, 'textColor'),
         stroke: game.settings.get(MODULE_ID, 'strokeColor'),
         strokeThickness: game.settings.get(MODULE_ID, 'strokeWidth'),
         align: 'center'
     });
-}
-
-function isPC(token) {
-    // Sicherheitshalber auch überprüfen, ob actor überhaupt existiert
-    return token?.document?.actor?.type === 'character';
 }
