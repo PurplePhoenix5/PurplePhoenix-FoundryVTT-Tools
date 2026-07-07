@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Rays -->
+  <path fill="none" stroke="#ffffff" stroke-width="18" stroke-linecap="round" d="M256 40 v40 M256 432 v40 M90 90 l30 30 M392 392 l30 30 M90 422 l30 -30 M392 90 l30 30 M40 256 h40 M432 256 h40"/>
+  <!-- Tiny dots/accents like in the image -->
+  <circle cx="160" cy="140" r="10" fill="#ffffff"/>
+  <circle cx="360" cy="380" r="10" fill="#ffffff"/>
+  <circle cx="340" cy="400" r="6" fill="#ffffff"/>
+  
+  <!-- Outer Halo/Arch -->
+  <path fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" d="M180 180 C180 120 332 120 332 180 C332 250 280 280 280 390 L256 360 L232 390 C232 280 180 250 180 180 Z"/>
+  <!-- Inner M and V shapes -->
+  <path fill="none" stroke="#ffffff" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" d="M180 210 L256 160 L332 210 L280 240 L256 220 L232 240 Z"/>
+  <!-- Top arc above the head -->
+  <path fill="none" stroke="#ffffff" stroke-width="20" stroke-linecap="round" d="M190 140 C210 110 302 110 322 140"/>
+</svg>

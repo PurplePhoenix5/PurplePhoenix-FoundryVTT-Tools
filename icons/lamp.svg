@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Base -->
+  <polygon fill="#ffffff" points="180,420 320,420 290,350 210,350"/>
+  <!-- Body -->
+  <ellipse fill="#ffffff" cx="250" cy="300" rx="110" ry="70"/>
+  <!-- Handle -->
+  <path fill="none" stroke="#ffffff" stroke-width="40" stroke-linecap="round" d="M150 290 C50 290 50 150 150 150 C200 150 200 220 220 220"/>
+  <!-- Spout -->
+  <polygon fill="#ffffff" points="320,300 460,250 440,310 340,330"/>
+  <polygon fill="#ffffff" points="460,250 440,240 430,260"/>
+  <!-- Flame -->
+  <path fill="#ffffff" d="M470 150 C470 150 440 200 440 220 C440 235 455 245 470 245 C485 245 500 235 500 220 C500 200 470 150 470 150 Z"/>
+</svg>

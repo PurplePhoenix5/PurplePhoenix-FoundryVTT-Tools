@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Candle Stick -->
+  <rect x="220" y="240" width="72" height="240" fill="#ffffff" rx="10"/>
+  <rect x="200" y="470" width="112" height="20" fill="#ffffff" rx="5"/>
+  <!-- Flame -->
+  <path fill="#ffffff" d="M256 32 C256 32 190 130 190 180 C190 216 220 246 256 246 C292 246 322 216 322 180 C322 130 256 32 256 32 Z"/>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Stick -->
+  <path fill="#ffffff" d="M230 250 h52 l-20 230 h-12 z"/>
+  <!-- Torch Head -->
+  <rect x="220" y="210" width="72" height="40" fill="#ffffff" rx="8"/>
+  <!-- Main Flame -->
+  <path fill="#ffffff" d="M256 20 C256 20 190 130 190 180 C190 215 220 230 256 230 C292 230 322 215 322 180 C322 130 256 20 256 20 Z"/>
+  <!-- Side Flame -->
+  <path fill="#ffffff" d="M210 100 C210 100 150 160 150 190 C150 210 170 220 190 220 C210 220 230 210 230 190 C230 160 210 100 210 100 Z"/>
+  <!-- Side Flame 2 -->
+  <path fill="#ffffff" d="M300 120 C300 120 360 170 360 200 C360 220 340 230 320 230 C300 230 280 220 280 200 C280 170 300 120 300 120 Z"/>
+</svg>

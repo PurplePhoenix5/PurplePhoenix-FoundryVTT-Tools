@@ -1,25 +1,31 @@
-const MODULE_ID = 'hp-in-bar';
+const MODULE_ID = 'PurplePhoenix-FVTT-Tools';
 
 // Settings 
 Hooks.once('init', () => {
+    game.settings.register(MODULE_ID, 'enableHpInBar', {
+        name: '[HP in Bar] Enable Feature',
+        hint: 'Toggle the HP in Bar feature on or off. Requires a refresh.',
+        scope: 'client', config: true, type: Boolean, default: true,
+        requiresReload: true
+    });
     game.settings.register(MODULE_ID, 'fontSize', {
-        name: 'HP Font Size',
+        name: '[HP in Bar] Font Size',
         hint: 'Font size for the HP text inside the token health bar.',
         scope: 'client', config: true, type: Number, default: 16,
         range: { min: 8, max: 48, step: 1 }
     });
     game.settings.register(MODULE_ID, 'textColor', {
-        name: 'HP Text Color',
+        name: '[HP in Bar] Text Color',
         hint: 'Colour of the HP text.',
         scope: 'client', config: true, type: String, default: '#FFFFFF'
     });
     game.settings.register(MODULE_ID, 'strokeColor', {
-        name: 'HP Stroke/Outline Color',
+        name: '[HP in Bar] Stroke/Outline Color',
         hint: 'Outline colour for readability against the bar background.',
         scope: 'client', config: true, type: String, default: '#000000'
     });
     game.settings.register(MODULE_ID, 'strokeWidth', {
-        name: 'HP Stroke Width',
+        name: '[HP in Bar] Stroke Width',
         hint: 'Thickness of the text outline in pixels.',
         scope: 'client', config: true, type: Number, default: 4,
         range: { min: 0, max: 12, step: 1 }
@@ -90,6 +96,8 @@ function drawBarsWrapper(wrapped, ...args) {
 
 // Patching & cleanup 
 Hooks.once('ready', () => {
+    if (!game.settings.get(MODULE_ID, 'enableHpInBar')) return;
+
     // V13 Token Pfad für libWrapper
     const target = 'foundry.canvas.placeables.Token.prototype.drawBars';
     const TokenClass = foundry.canvas.placeables.Token;
@@ -111,6 +119,7 @@ Hooks.once('ready', () => {
 
 // Bei Änderungen der Settings die Balken frisch rendern
 Hooks.on('updateSetting', setting => {
+    if (!game.settings.get(MODULE_ID, 'enableHpInBar')) return;
     if (setting.key.startsWith(`${MODULE_ID}.`) && canvas?.ready) {
         canvas.tokens.placeables.forEach(t => t.renderFlags?.set({ refreshBars: true }));
     }
