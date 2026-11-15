@@ -32,6 +32,18 @@
   "EASYTEMPHP.HudTooltip": "Temporäre Trefferpunkte (Temp-TP). Zahl eingeben zum Setzen/Überschreiben, oder +5 / -3 zum Anpassen. 0 setzt Temp-TP zurück.",
   "EASYTEMPHP.Bar1Tooltip": "Reguläre Trefferpunkte (ohne Temp-TP). -5 für Schaden (zieht zuerst Temp-TP ab), +5 für Heilung, oder eine Zahl um die regulären TP direkt zu setzen.",
 
+  "BETTERMEASURE.Enable": "[Better Measure] Feature aktivieren",
+  "BETTERMEASURE.EnableHint": "Hält das Distanz-Messwerkzeug (Lineal) unabhängig vom Zoom-Level und der Kartenauflösung immer auf einer konstanten, gut lesbaren Bildschirmgröße.",
+  "BETTERMEASURE.Size": "[Better Measure] Größe der Messanzeige (%)",
+  "BETTERMEASURE.SizeHint": "Konstante Bildschirmgröße des Mess-Labels, der Linie und der Wegpunkte (100% = normale Größe, unabhängig vom Zoom).",
+  "BETTERMEASURE.IncludeTokenRuler": "[Better Measure] Auch auf Token-Bewegungsmessung anwenden",
+  "BETTERMEASURE.IncludeTokenRulerHint": "Hält die Distanzanzeige und Linie auch beim Ziehen von Tokens auf konstanter Bildschirmgröße.",
+
+  "EASYTEMPLATES.Enable": "[Easy Templates] Feature aktivieren",
+  "EASYTEMPLATES.EnableHint": "Rastet die Größe von Messschablonen (Kreis, Kegel, Rechteck, Strahl) beim Ziehen in festen Intervallen ein und sorgt dafür, dass Rechteck-Schablonen sich mit Strg/Shift + Mausrad wirklich drehen, anstatt ihr Seitenverhältnis zu ändern.",
+  "EASYTEMPLATES.SnapStep": "[Easy Templates] Längen-Schritte (Einheiten / ft)",
+  "EASYTEMPLATES.SnapStepHint": "Längen-Intervall in Raster-Einheiten (z. B. ft), in dem Schablonen beim Erstellen einrasten (Standard: 2.5).",
+
   "SIMPLELIGHT.Enable": "[Simple Light] Feature aktivieren",
   "SIMPLELIGHT.EnableHint": "Fügt dem Token-HUD einen Button hinzu, um gängige D&D-Lichtquellen schnell auszuwählen.",
   "SIMPLELIGHT.ButtonTitle": "Lichtquellen",

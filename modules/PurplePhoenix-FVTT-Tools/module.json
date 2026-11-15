@@ -1,9 +1,9 @@
 {
   "id": "PurplePhoenix-FVTT-Tools",
   "title": "PurplePhoenix FVTT Tools",
-  "description": "A collection of quality-of-life tools for Foundry VTT v13 (D&D 5e): HP & AC in Bar, Easy Temp HP in Token HUD, Simple Light Sources, and Easy Flip Token.",
+  "description": "A collection of quality-of-life tools for Foundry VTT v13 (D&D 5e): HP & AC in Bar, Easy Temp HP in Token HUD, Better Measure (zoom-independent ruler), Simple Light Sources, and Easy Flip Token.",
   "authors": [{ "name": "PurplePhoenix" }],
-  "version": "1.2.1",
+  "version": "1.3.0",
   "compatibility": {
     "minimum": "13",
     "verified": "13.350",

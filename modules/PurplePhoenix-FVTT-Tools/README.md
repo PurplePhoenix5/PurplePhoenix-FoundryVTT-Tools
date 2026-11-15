@@ -30,7 +30,19 @@ Manage Temporary Hit Points directly from the right-click **Token HUD** without 
     - Type `+6` (healing) to heal regular HP.
     - Type `18` (absolute number) to set regular HP directly to 18 without wiping out active Temp HP.
 
-### 3. Simple Light
+### 3. Better Measure
+Keeps the distance measurement tool (Ruler & optionally Token Drag Ruler) at a **constant, customizable screen size** regardless of camera zoom level or map grid size:
+- Perfect for huge world maps or regional maps where zooming out normally shrinks the distance label and line into tiny, unreadable text.
+- **Adjustable Size (`50%` – `250%`)**: Each player can set their preferred measurement size in the module settings.
+- **Live Zoom Compensation**: Smoothly maintains constant screen size even while zooming in or out with the mouse wheel during an active measurement.
+
+### 4. Easy Templates
+Enhances Foundry VTT's Measurement Templates (*Circle*, *Cone*, *Rectangle*, *Ray*):
+- **Snappy Distance Intervals**: Instead of changing length in `0.01` increments when dragging, templates snap cleanly to a configurable step interval (default: **`2.5 ft`**) while allowing smooth directional aiming.
+- **Snappy Rectangle Dimensions**: Rectangle templates snap both their **width** and **height** directly to the configured step interval (e.g. `10 ft × 15 ft` instead of snapping the diagonal hypotenuse).
+- **True Rectangle Rotation**: Rotating a rectangle template with `Ctrl + Mouse Wheel` (`5°` steps) or `Ctrl + Shift + Mouse Wheel` (`15°` steps) **truly rotates the rectangle** (and its grid highlighting) instead of distorting its width/height aspect ratio.
+
+### 5. Simple Light
 Adds a **Light Sources** button to the left column of the Token HUD to apply common D&D 5e light sources with a single click:
 - **Extinguish** (*0 / 0 ft.*)
 - **Light Spell** (*20 / 40 ft.*)
@@ -43,7 +55,7 @@ Adds a **Light Sources** button to the left column of the Token HUD to apply com
 
 Uses authentic **Game-Icons.net** vector icons matching Foundry VTT's native UI icon style.
 
-### 4. Easy Flip Token
+### 6. Easy Flip Token
 Press `F` (configurable in *Configure Controls*) to horizontally flip/mirror all currently selected tokens on the canvas with a smooth 150ms animation. Players can flip tokens they own; the GM can flip any token.
 
 ---

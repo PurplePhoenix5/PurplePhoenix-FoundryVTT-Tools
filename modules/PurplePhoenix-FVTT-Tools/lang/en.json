@@ -32,6 +32,18 @@
   "EASYTEMPHP.HudTooltip": "Temporary Hit Points (Temp HP). Type a number to set/overwrite, or +5 / -3 to adjust. 0 clears Temp HP.",
   "EASYTEMPHP.Bar1Tooltip": "Regular Hit Points (without Temp HP). Type -5 for damage (deducts from Temp HP first), +5 for healing, or a number to set regular HP directly.",
 
+  "BETTERMEASURE.Enable": "[Better Measure] Enable Feature",
+  "BETTERMEASURE.EnableHint": "Keeps the distance measurement tool at a constant, readable size on screen regardless of camera zoom level or map grid size.",
+  "BETTERMEASURE.Size": "[Better Measure] Measurement Size (%)",
+  "BETTERMEASURE.SizeHint": "Constant screen size of the measurement label, line, and waypoints (100% = default readable size, independent of zoom).",
+  "BETTERMEASURE.IncludeTokenRuler": "[Better Measure] Also Apply to Token Drag Measurement",
+  "BETTERMEASURE.IncludeTokenRulerHint": "Also keeps the distance label and path line at a constant screen size when dragging tokens.",
+
+  "EASYTEMPLATES.Enable": "[Easy Templates] Enable Feature",
+  "EASYTEMPLATES.EnableHint": "Snaps measurement template sizes (circle, cone, rectangle, ray) to a fixed step interval when drawing, and makes rectangle templates truly rotate with Ctrl/Shift + Mouse Wheel instead of changing their aspect ratio.",
+  "EASYTEMPLATES.SnapStep": "[Easy Templates] Distance Snap Step (Grid Units / ft)",
+  "EASYTEMPLATES.SnapStepHint": "Distance interval in grid units (e.g. ft) that templates snap to when created (Default: 2.5).",
+
   "SIMPLELIGHT.Enable": "[Simple Light] Enable Feature",
   "SIMPLELIGHT.EnableHint": "Adds a button to the Token HUD to quickly configure common D&D light sources.",
   "SIMPLELIGHT.ButtonTitle": "Light Sources",
