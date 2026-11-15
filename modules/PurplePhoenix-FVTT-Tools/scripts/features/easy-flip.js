@@ -2,15 +2,17 @@ const MODULE_ID = 'PurplePhoenix-FVTT-Tools';
 
 Hooks.once('init', () => {
     game.settings.register(MODULE_ID, 'enableEasyFlip', {
-        name: '[Easy Flip] Enable Feature',
-        hint: 'Toggle the Easy Flip feature on or off. Requires a refresh.',
-        scope: 'client', config: true, type: Boolean, default: true,
-        requiresReload: true
+        name: 'EASYFLIP.Enable',
+        hint: 'EASYFLIP.EnableHint',
+        scope: 'world',
+        config: true,
+        type: Boolean,
+        default: true
     });
 
     game.keybindings.register(MODULE_ID, 'easyFlip', {
-        name: 'Easy Flip Token',
-        hint: 'Flips the selected tokens horizontally.',
+        name: 'EASYFLIP.KeybindName',
+        hint: 'EASYFLIP.KeybindHint',
         editable: [
             { key: 'KeyF' }
         ],
@@ -26,7 +28,7 @@ Hooks.once('init', () => {
 async function flipSelectedTokens() {
     if (!canvas?.ready) return;
     if (game.settings.get(MODULE_ID, 'enableEasyFlip') === false) return;
-    
+
     const tokens = canvas.tokens.controlled;
     if (tokens.length === 0) return;
 
@@ -40,7 +42,7 @@ async function flipSelectedTokens() {
         // Use _source to avoid reading mid-animation interpolated values that cause shrinking when spammed
         const baseScale = Math.abs(token.document._source.texture.scaleX || 1);
         const currentSign = Math.sign(token.document.texture.scaleX || 1);
-        
+
         updates.push({
             _id: token.id,
             "texture.scaleX": baseScale * (currentSign === 1 ? -1 : 1)

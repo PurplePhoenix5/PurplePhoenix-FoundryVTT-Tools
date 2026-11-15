@@ -1,18 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Left Side Frame -->
-  <rect x="96" y="160" width="32" height="256" fill="#ffffff" />
-  <!-- Center Pillar -->
-  <rect x="224" y="160" width="32" height="256" fill="#ffffff" />
-  <!-- Top and Bottom borders -->
-  <rect x="96" y="160" width="160" height="32" fill="#ffffff" />
-  <rect x="96" y="384" width="160" height="32" fill="#ffffff" />
-  <!-- Top Cap -->
-  <path fill="#ffffff" d="M256 160 v-32 C256 80 128 80 96 160 Z"/>
-  <!-- Ring/Handle -->
-  <path fill="none" stroke="#ffffff" stroke-width="24" d="M224 64 C180 64 128 80 128 128"/>
-  <!-- Cone of light -->
-  <polygon fill="#ffffff" opacity="0.4" points="256,256 500,128 500,384"/>
-  <circle cx="200" cy="288" r="24" fill="#ffffff"/>
-  <!-- Cone secondary detail -->
-  <polygon fill="#ffffff" opacity="0.3" points="256,270 440,200 440,340"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><path fill="#ffffff" fill-opacity="1" d="M128 65c-4.37 0-8.74.485-13 1.469V151h26V66.469A57.805 57.805 0 0 0 128 65zm-31 9.354C83.018 84.017 73 101.452 73 128v23h24V74.354zm62 0V151h24v-23c0-26.548-10.018-43.983-24-53.646zm38.176 26.148C199.634 108.783 201 117.962 201 128v137H73.23L304 490h186V384L197.176 100.502zM73 169v78h24v-78H73zm42 0v78h26v-78h-26zm44 0v78h24v-78h-24z"/></svg>

@@ -1,12 +1,13 @@
 {
   "id": "PurplePhoenix-FVTT-Tools",
   "title": "PurplePhoenix FVTT Tools",
-  "description": "A collection of small quality-of-life modules for Foundry VTT.",
+  "description": "A collection of quality-of-life tools for Foundry VTT v13 (D&D 5e): HP & AC in Bar, Easy Temp HP in Token HUD, Simple Light Sources, and Easy Flip Token.",
   "authors": [{ "name": "PurplePhoenix" }],
-  "version": "1.1.0",
+  "version": "1.2.0",
   "compatibility": {
     "minimum": "13",
-    "verified": "13"
+    "verified": "13.350",
+    "maximum": "13"
   },
   "relationships": {
     "systems": [
@@ -14,6 +15,18 @@
     ]
   },
   "esmodules": ["scripts/main.js"],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "de",
+      "name": "Deutsch",
+      "path": "lang/de.json"
+    }
+  ],
   "url": "https://github.com/PurplePhoenix5/PurplePhoenix-FoundryVTT-Tools",
   "manifest": "https://github.com/PurplePhoenix5/PurplePhoenix-FoundryVTT-Tools/releases/latest/download/module.json",
   "download": "https://github.com/PurplePhoenix5/PurplePhoenix-FoundryVTT-Tools/releases/latest/download/PurplePhoenix-FVTT-Tools.zip"
