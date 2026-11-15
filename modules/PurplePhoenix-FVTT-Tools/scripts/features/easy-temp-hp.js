@@ -76,9 +76,12 @@ function registerTempHpTrackableAttribute() {
  *    shows regular HP while the blue Bar 2 box shows Temp HP.
  */
 function getBarAttributeWrapper(wrapped, barName, options = {}) {
+    // Always call wrapped first so libWrapper 'WRAPPER' requirement is always satisfied
+    const data = wrapped.call(this, barName, options);
+
     const { enableEasyTempHp, autoSetBar2TempHp } = settings();
     if (!enableEasyTempHp) {
-        return wrapped.call(this, barName, options);
+        return data;
     }
 
     let attribute = options?.alternative || this[barName]?.attribute;
@@ -98,7 +101,6 @@ function getBarAttributeWrapper(wrapped, barName, options = {}) {
         };
     }
 
-    const data = wrapped.call(this, barName, options);
     if (data?.attribute === HP_ATTR && hasHp(this.actor)) {
         data.value = Number(this.actor.system.attributes.hp.value ?? data.value ?? 0);
     }
@@ -173,7 +175,7 @@ Hooks.once('setup', () => {
     const ActorDocClass = CONFIG.Actor?.documentClass ?? foundry.documents?.Actor ?? Actor;
     if (ActorDocClass?.prototype?.modifyTokenAttribute) {
         if (typeof libWrapper !== 'undefined') {
-            libWrapper.register(MODULE_ID, 'CONFIG.Actor.documentClass.prototype.modifyTokenAttribute', modifyTokenAttributeWrapper, 'WRAPPER');
+            libWrapper.register(MODULE_ID, 'CONFIG.Actor.documentClass.prototype.modifyTokenAttribute', modifyTokenAttributeWrapper, 'MIXED');
         } else {
             const origModifyAttr = ActorDocClass.prototype.modifyTokenAttribute;
             ActorDocClass.prototype.modifyTokenAttribute = function (attribute, value, isDelta, isBar) {
@@ -202,6 +204,9 @@ Hooks.on('renderTokenHUD', (hud, html) => {
         if (bar1?.attribute === HP_ATTR) {
             const bar1Input = root.querySelector('input[name="bar1"], input[name="bar1.value"]');
             if (bar1Input) {
+                if (hasHp(tokenDoc.actor)) {
+                    bar1Input.value = String(Number(tokenDoc.actor.system.attributes.hp.value ?? bar1.value ?? 0));
+                }
                 bar1Input.dataset.tooltip = game.i18n.localize('EASYTEMPHP.Bar1Tooltip');
             }
         }
