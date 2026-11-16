@@ -24,8 +24,8 @@ Hooks.once('init', () => {
     game.settings.register(MODULE_ID, 'enableEasyTempHp', {
         name: 'EASYTEMPHP.Enable',
         hint: 'EASYTEMPHP.EnableHint',
-        scope: 'world',
-        config: true,
+        scope: 'client',
+        config: false,
         type: Boolean,
         default: true,
         onChange: refreshTokensAndHud
@@ -35,7 +35,7 @@ Hooks.once('init', () => {
         name: 'EASYTEMPHP.AutoSetBar2',
         hint: 'EASYTEMPHP.AutoSetBar2Hint',
         scope: 'world',
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         onChange: refreshTokensAndHud

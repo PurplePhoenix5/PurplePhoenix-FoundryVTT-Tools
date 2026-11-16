@@ -85,7 +85,7 @@ Hooks.once('init', () => {
     name: 'EASYTEMPLATES.Enable',
     hint: 'EASYTEMPLATES.EnableHint',
     scope: 'world',
-    config: true,
+    config: false,
     type: Boolean,
     default: true,
     onChange: () => refreshAllTemplates()
@@ -95,7 +95,7 @@ Hooks.once('init', () => {
     name: 'EASYTEMPLATES.SnapStep',
     hint: 'EASYTEMPLATES.SnapStepHint',
     scope: 'world',
-    config: true,
+    config: false,
     type: Number,
     default: 2.5
   });

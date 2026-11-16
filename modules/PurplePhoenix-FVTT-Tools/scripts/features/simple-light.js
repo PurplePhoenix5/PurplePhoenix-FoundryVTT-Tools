@@ -4,8 +4,8 @@ Hooks.once('init', () => {
     game.settings.register(MODULE_ID, 'enableSimpleLight', {
         name: 'SIMPLELIGHT.Enable',
         hint: 'SIMPLELIGHT.EnableHint',
-        scope: 'world',
-        config: true,
+        scope: 'client',
+        config: false,
         type: Boolean,
         default: true,
         onChange: () => {

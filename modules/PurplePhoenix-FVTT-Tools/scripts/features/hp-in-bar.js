@@ -35,12 +35,12 @@ Hooks.once('init', () => {
     game.settings.register(MODULE_ID, 'enableHpInBar', {
         name: 'HPINBAR.Enable',
         hint: 'HPINBAR.EnableHint',
-        scope: 'world', config: true, onChange: redrawAll, type: Boolean, default: true
+        scope: 'world', config: false, onChange: redrawAll, type: Boolean, default: true
     });
     game.settings.register(MODULE_ID, 'visibleTo', {
         name: 'HPINBAR.VisibleTo',
         hint: 'HPINBAR.VisibleToHint',
-        scope: 'world', config: true, onChange: redrawAll, type: String, default: 'owner',
+        scope: 'world', config: false, onChange: redrawAll, type: String, default: 'owner',
         choices: {
             owner: 'HPINBAR.VisibleToOwner',
             everyone: 'HPINBAR.VisibleToEveryone',
@@ -50,8 +50,9 @@ Hooks.once('init', () => {
     game.settings.register(MODULE_ID, 'acVisibleTo', {
         name: 'HPINBAR.AcVisibleTo',
         hint: 'HPINBAR.AcVisibleToHint',
-        scope: 'world', config: true, onChange: redrawAll, type: String, default: 'owner',
+        scope: 'world', config: false, onChange: redrawAll, type: String, default: 'combat',
         choices: {
+            combat: 'HPINBAR.AcVisibleToCombat',
             owner: 'HPINBAR.VisibleToOwner',
             everyone: 'HPINBAR.VisibleToEveryone',
             gm: 'HPINBAR.VisibleToGM',
@@ -61,40 +62,40 @@ Hooks.once('init', () => {
     game.settings.register(MODULE_ID, 'tempText', {
         name: 'HPINBAR.TempText',
         hint: 'HPINBAR.TempTextHint',
-        scope: 'client', config: true, onChange: redrawAll, type: String, default: 'separate',
+        scope: 'client', config: false, onChange: redrawAll, type: String, default: 'combined',
         choices: {
-            separate: 'HPINBAR.TempTextSeparate',
             combined: 'HPINBAR.TempTextCombined',
+            separate: 'HPINBAR.TempTextSeparate',
             hidden: 'HPINBAR.TempTextHidden'
         }
     });
     game.settings.register(MODULE_ID, 'tempShield', {
         name: 'HPINBAR.TempShield',
         hint: 'HPINBAR.TempShieldHint',
-        scope: 'client', config: true, onChange: redrawAll, type: Boolean, default: false
+        scope: 'client', config: false, onChange: redrawAll, type: Boolean, default: false
     });
     game.settings.register(MODULE_ID, 'fontSize', {
         name: 'HPINBAR.FontSize',
         hint: 'HPINBAR.FontSizeHint',
-        scope: 'client', config: true, onChange: redrawAll, type: Number, default: 14,
+        scope: 'client', config: false, onChange: redrawAll, type: Number, default: 14,
         range: { min: 8, max: 48, step: 1 }
     });
     game.settings.register(MODULE_ID, 'textColor', {
         name: 'HPINBAR.TextColor',
         hint: 'HPINBAR.TextColorHint',
-        scope: 'client', config: true, onChange: redrawAll,
+        scope: 'client', config: false, onChange: redrawAll,
         type: new ColorField({ nullable: false, initial: '#ffffff' }), default: '#ffffff'
     });
     game.settings.register(MODULE_ID, 'strokeColor', {
         name: 'HPINBAR.StrokeColor',
         hint: 'HPINBAR.StrokeColorHint',
-        scope: 'client', config: true, onChange: redrawAll,
+        scope: 'client', config: false, onChange: redrawAll,
         type: new ColorField({ nullable: false, initial: '#000000' }), default: '#000000'
     });
     game.settings.register(MODULE_ID, 'strokeWidth', {
         name: 'HPINBAR.StrokeWidth',
         hint: 'HPINBAR.StrokeWidthHint',
-        scope: 'client', config: true, onChange: redrawAll, type: Number, default: 4,
+        scope: 'client', config: false, onChange: redrawAll, type: Number, default: 4,
         range: { min: 0, max: 12, step: 1 }
     });
 });
@@ -108,76 +109,85 @@ function drawBarsWrapper(wrapped, ...args) {
     try {
         const { enableHpInBar, tempShield, tempText } = settings();
 
-        // If feature is disabled in this world, or token has no actor/bars -> hide our elements & return
-        if (!enableHpInBar || !this.actor || this.document.displayBars === CONST.TOKEN_DISPLAY_MODES.NONE) {
+        // If feature is disabled in this world, or token has no actor -> hide our elements & return
+        if (!enableHpInBar || !this.actor) {
             hideModuleBarElements(this);
             return result;
         }
 
-        const allowed = canSeeNumbers(this);
-        const s = canvas?.dimensions?.uiScale || 1;
-        const textRes = getTextResolution(s);
-        const hp = this.actor.system?.attributes?.hp ?? {};
+        if (this.document.displayBars !== CONST.TOKEN_DISPLAY_MODES.NONE) {
+            const allowed = canSeeNumbers(this);
+            const s = canvas?.dimensions?.uiScale || 1;
+            const textRes = getTextResolution(s);
+            const hp = this.actor.system?.attributes?.hp ?? {};
 
-        ["bar1", "bar2"].forEach((b) => {
-            const bar = this.bars?.[b];
-            if (!bar) return;
-            const attr = this.document.getBarAttribute(b);
-            const isHP = isHPBar(attr) && bar.visible;
+            ["bar1", "bar2"].forEach((b) => {
+                const bar = this.bars?.[b];
+                if (!bar) return;
+                const attr = this.document.getBarAttribute(b);
+                const isHP = isHPBar(attr) && bar.visible;
 
-            // Measured once per draw, with our own pieces left out, so everything below follows
-            // whatever size core (or the system) gives its bars.
-            const bounds = bar._hpBounds = isHP ? barBounds(bar) : null;
+                // Measured once per draw, with our own pieces left out, so everything below follows
+                // whatever size core (or the system) gives its bars.
+                const bounds = bar._hpBounds = isHP ? barBounds(bar) : null;
 
-            // The temp HP layer is part of the bar, so it follows the bar, not the numbers setting.
-            drawTempShield(bar, isHP && tempShield ? hp : null, bounds);
+                // The temp HP layer is part of the bar, so it follows the bar, not the numbers setting.
+                drawTempShield(bar, isHP && tempShield ? hp : null, bounds);
 
-            // not HP || invisible || not for this user -> disable text
-            if (!allowed || !isHP || !bounds) {
-                if (bar._hpText) bar._hpText.visible = false;
-                return;
-            }
-
-            // Use actor's base hp.value if available so temp HP is never double-counted in 'combined' mode
-            const baseValue = (attr.attribute === HP_ATTRIBUTE && hp.value !== undefined)
-                ? Number(hp.value || 0)
-                : Number(attr.value || 0);
-            const maxValue = Number(attr.max || 0);
-
-            const parts = hpLabel({ value: baseValue, max: maxValue, temp: hp.temp }, tempText);
-            const label = hpTextContainer(bar);
-            label.visible = true;
-
-            // Scale label container with canvas.dimensions.uiScale so font size is independent of map grid resolution
-            label.scale.set(s, s);
-
-            // Only touch what changed: assigning a style or text, even the same one, makes PIXI
-            // render the text again, and Foundry redraws bars often.
-            const key = `${parts.value}|${parts.temp}|${parts.max}|${styleVersion}|${textRes}`;
-            if (label._key !== key) {
-                label._key = key;
-                setText(label._value, parts.value, getStyle(), textRes);
-                setText(label._temp, parts.temp ?? '', getTempStyle(), textRes);
-                setText(label._max, parts.max, getStyle(), textRes);
-                label._temp.visible = !!parts.temp;
-
-                // Lay the pieces out left to right in local (unscaled) coordinates, centred as a whole.
-                const pieces = [label._value, label._temp, label._max].filter(p => p.visible);
-                const total = pieces.reduce((sum, p) => sum + (p.width / (p.scale?.x || 1)), 0);
-                let x = -total / 2;
-                for (const p of pieces) {
-                    p.x = x;
-                    x += (p.width / (p.scale?.x || 1));
+                // not HP || invisible || not for this user -> disable text
+                if (!allowed || !isHP || !bounds) {
+                    if (bar._hpText) bar._hpText.visible = false;
+                    return;
                 }
+
+                // Use actor's base hp.value if available so temp HP is never double-counted in 'combined' mode
+                const baseValue = (attr.attribute === HP_ATTRIBUTE && hp.value !== undefined)
+                    ? Number(hp.value || 0)
+                    : Number(attr.value || 0);
+                const maxValue = Number(attr.max || 0);
+
+                const parts = hpLabel({ value: baseValue, max: maxValue, temp: hp.temp }, tempText);
+                const label = hpTextContainer(bar);
+                label.visible = true;
+
+                // Scale label container with canvas.dimensions.uiScale so font size is independent of map grid resolution
+                label.scale.set(s, s);
+
+                // Only touch what changed: assigning a style or text, even the same one, makes PIXI
+                // render the text again, and Foundry redraws bars often.
+                const key = `${parts.value}|${parts.temp}|${parts.max}|${styleVersion}|${textRes}`;
+                if (label._key !== key) {
+                    label._key = key;
+                    setText(label._value, parts.value, getStyle(), textRes);
+                    setText(label._temp, parts.temp ?? '', getTempStyle(), textRes);
+                    setText(label._max, parts.max, getStyle(), textRes);
+                    label._temp.visible = !!parts.temp;
+
+                    // Lay the pieces out left to right in local (unscaled) coordinates, centred as a whole.
+                    const pieces = [label._value, label._temp, label._max].filter(p => p.visible);
+                    const total = pieces.reduce((sum, p) => sum + (p.width / (p.scale?.x || 1)), 0);
+                    let x = -total / 2;
+                    for (const p of pieces) {
+                        p.x = x;
+                        x += (p.width / (p.scale?.x || 1));
+                    }
+                }
+
+                // Ensure text renders above bar graphics and temp shield
+                bar.sortableChildren = true;
+                label.zIndex = 100;
+
+                const width = bounds.width || this.w;
+                label.position.set(bounds.x + width / 2, bounds.y + bounds.height / 2);
+            });
+        } else {
+            for (const b of ["bar1", "bar2"]) {
+                const bar = this.bars?.[b];
+                if (!bar) continue;
+                if (bar._hpText) bar._hpText.visible = false;
+                if (bar._tempShield) bar._tempShield.visible = false;
             }
-
-            // Ensure text renders above bar graphics and temp shield
-            bar.sortableChildren = true;
-            label.zIndex = 100;
-
-            const width = bounds.width || this.w;
-            label.position.set(bounds.x + width / 2, bounds.y + bounds.height / 2);
-        });
+        }
     } catch (err) {
         console.error(`${MODULE_ID} | Error drawing HP text:`, err);
     }
@@ -191,15 +201,27 @@ function drawBarsWrapper(wrapped, ...args) {
     return result;
 }
 
-function hideModuleBarElements(token) {
-    if (!token?.bars) return;
-    for (const b of ["bar1", "bar2"]) {
-        const bar = token.bars[b];
-        if (!bar) continue;
-        if (bar._hpText) bar._hpText.visible = false;
-        if (bar._tempShield) bar._tempShield.visible = false;
+function refreshStateWrapper(wrapped, ...args) {
+    const result = wrapped.call(this, ...args);
+    try {
+        updateAcBadgeVisibility(this);
+    } catch (err) {
+        console.error(`${MODULE_ID} | Error updating AC badge visibility:`, err);
     }
-    if (token.bars._acBadge) token.bars._acBadge.visible = false;
+    return result;
+}
+
+function hideModuleBarElements(token) {
+    if (token?.bars) {
+        for (const b of ["bar1", "bar2"]) {
+            const bar = token.bars[b];
+            if (!bar) continue;
+            if (bar._hpText) bar._hpText.visible = false;
+            if (bar._tempShield) bar._tempShield.visible = false;
+        }
+        if (token.bars._acBadge) token.bars._acBadge.visible = false;
+    }
+    if (token?._acBadge) token._acBadge.visible = false;
 }
 
 /** A bar's drawn rectangle in its own coordinates, with everything we add left out. */
@@ -251,7 +273,7 @@ function hpTextContainer(bar) {
  * - `combined`: `343 / 243`, temp HP counted into the first number
  * - `hidden`:   `243 / 243`, temp HP left to the bar
  */
-export function hpLabel({ value, max, temp }, mode = 'separate') {
+export function hpLabel({ value, max, temp }, mode = 'combined') {
     const t = Number(temp) || 0;
     if (t > 0 && mode === 'separate') return { value: `${value} `, temp: `+${t}`, max: ` / ${max}` };
     if (t > 0 && mode === 'combined') return { value: `${(Number(value) || 0) + t}`, temp: null, max: ` / ${max}` };
@@ -308,21 +330,27 @@ function drawTempShield(bar, hp, b) {
 
 
 // AC badge
-// A small shield with the AC, pinned to the left end of bar1. It lives in the token's bars
-// container, so it shows and hides with the bars (hover, owner, always).
+// Attached directly to the token container so that even when a neutral/enemy token's health bar is
+// restricted to Owner/GM only, players can still see its AC shield when in the same Combat Encounter.
 function drawAcBadge(token) {
-    const bars = token.bars;
-    if (!bars) return;
+    if (!token) return;
     const { enableHpInBar } = settings();
     const ac = enableHpInBar ? readAc(token.actor) : null;
-    const show = ac && canSee(token, 'acVisibleTo');
+    const allowed = ac && canSeeAc(token);
 
-    if (!show) {
-        if (bars._acBadge) bars._acBadge.visible = false;
+    if (!allowed) {
+        if (token._acBadge) token._acBadge.visible = false;
+        if (token.bars?._acBadge) token.bars._acBadge.visible = false;
         return;
     }
 
-    let badge = bars._acBadge;
+    // Clean up legacy badge on token.bars if present
+    if (token.bars?._acBadge && !token.bars._acBadge.destroyed) {
+        token.bars._acBadge.destroy();
+        token.bars._acBadge = null;
+    }
+
+    let badge = token._acBadge;
     if (!badge || badge.destroyed) {
         badge = new PIXI.Container();
         badge.eventMode = 'none';
@@ -332,8 +360,8 @@ function drawAcBadge(token) {
         if ('_autoResolution' in t) t._autoResolution = false;
         t.anchor.set(0.5, 0.5);
         badge._text = badge.addChild(t);
-        bars._acBadge = bars.addChild(badge);
-        bars.sortableChildren = true;
+        token._acBadge = token.addChild(badge);
+        token.sortableChildren = true;
         badge.zIndex = 200;
     }
 
@@ -345,6 +373,8 @@ function drawAcBadge(token) {
     const h = Math.round(size * 1.8);
 
     badge.scale.set(s, s);
+    badge._scaledW = w * s;
+    badge._scaledH = h * s;
 
     // Redrawn only when something on it changed; Foundry redraws bars far more often than that.
     const key = `${ac.value}|${size}|${styleVersion}|${textRes}`;
@@ -361,19 +391,51 @@ function drawAcBadge(token) {
         badge._text.position.set(0, -h * 0.06);
     }
 
-    // Just left of bar1, overlapping it only a little so the numbers stay clear, vertically on
-    // its middle. No bar1 → just left of the token's bottom-left corner.
-    const scaledW = w * s;
-    const scaledH = h * s;
-    const overlap = scaledW * 0.2;
-    const bar = bars.bar1;
-    if (bar?.visible) {
-        const b = bar._hpBounds ?? barBounds(bar);
-        badge.position.set(bar.x + b.x - scaledW / 2 + overlap, bar.y + b.y + b.height / 2);
-    } else {
-        badge.position.set(-scaledW / 2 + overlap, token.h - scaledH / 2);
+    updateAcBadgeVisibility(token);
+}
+
+function updateAcBadgeVisibility(token) {
+    const badge = token?._acBadge;
+    if (!badge || badge.destroyed) return;
+
+    const { enableHpInBar } = settings();
+    const ac = enableHpInBar ? readAc(token.actor) : null;
+    const isSecret = (token.document.disposition === CONST.TOKEN_DISPOSITIONS.SECRET) && !token.isOwner;
+    if (!ac || isSecret || !canSeeAc(token)) {
+        badge.visible = false;
+        return;
     }
-    badge.visible = true;
+
+    const scaledW = badge._scaledW || Math.round(settings().fontSize * 1.6) * (canvas?.dimensions?.uiScale || 1);
+    const scaledH = badge._scaledH || Math.round(settings().fontSize * 1.8) * (canvas?.dimensions?.uiScale || 1);
+    const overlap = scaledW * 0.2;
+    const bars = token.bars;
+    const bar1 = bars?.bar1;
+
+    if (bars?.visible && bar1?.visible) {
+        const b = bar1._hpBounds ?? barBounds(bar1);
+        badge.position.set((bars.x || 0) + bar1.x + b.x - scaledW / 2 + overlap, (bars.y || 0) + bar1.y + b.y + b.height / 2);
+        badge.visible = true;
+        return;
+    }
+
+    // If the user cannot see the token's HP bars (e.g. displayBars is OWNER_HOVER or OWNER on an enemy),
+    // still show the AC badge if canSeeAc(token) allows it (respecting hover vs always mode).
+    const mode = token.document.displayBars;
+    const M = CONST.TOKEN_DISPLAY_MODES;
+    let showWithoutBar = false;
+    if (token._canViewMode?.(mode)) {
+        showWithoutBar = Boolean(bars?.visible);
+    } else {
+        if (mode === M.ALWAYS || mode === M.OWNER || mode === M.NONE) {
+            showWithoutBar = true;
+        } else if (mode === M.HOVER || mode === M.OWNER_HOVER || mode === M.CONTROL) {
+            showWithoutBar = Boolean(token.hover || token.controlled);
+        }
+    }
+
+    badge.position.set(-scaledW / 2 + overlap, token.h - scaledH / 2);
+    badge.visible = showWithoutBar;
 }
 
 /** A heater shield centred on 0,0: flat top, sides that curve into a point at the bottom. */
@@ -404,6 +466,15 @@ for (const hook of ['updateActor', 'createActiveEffect', 'updateActiveEffect', '
     });
 }
 
+// Also refresh token bars/AC badges when combat state or combatants change
+for (const combatHook of ['createCombat', 'updateCombat', 'deleteCombat', 'createCombatant', 'updateCombatant', 'deleteCombatant', 'combatStart', 'combatTurn', 'combatRound']) {
+    Hooks.on(combatHook, () => {
+        if (canvas?.ready) {
+            canvas.tokens.placeables.forEach(t => t.renderFlags?.set({ refreshBars: true }));
+        }
+    });
+}
+
 /** Whether a bar shows hit points with a maximum worth dividing by. */
 export function isHPBar(attr) {
     if (!attr || attr.type !== 'bar' || !(attr.max > 0)) return false;
@@ -413,14 +484,69 @@ export function isHPBar(attr) {
 
 /** Whether this user gets the numbers on this token, per the world's setting. */
 function canSeeNumbers(token) {
-    return canSee(token, 'visibleTo');
-}
-
-function canSee(token, setting) {
-    return numbersVisible(settings()[setting], {
+    return numbersVisible(settings().visibleTo, {
         isGM: game.user.isGM,
         isOwner: token.document.isOwner
     });
+}
+
+/**
+ * Determine whether the current user is allowed to see the AC shield on `token`:
+ * - `off`: Nobody
+ * - `everyone`: Everyone
+ * - `gm`: GM only
+ * - `owner`: Token owners and GM
+ * - `combat`: GM always; Players always see AC on Friendly tokens and Player Characters,
+ *             and see AC on Neutral/Hostile tokens only when that token is in the same Combat Encounter.
+ */
+function canSeeAc(token) {
+    const mode = settings().acVisibleTo;
+    if (mode === 'off') return false;
+    if (mode === 'everyone') return true;
+    if (mode === 'gm') return game.user.isGM;
+    if (mode === 'owner') return game.user.isGM || token.document.isOwner;
+
+    if (mode === 'combat') {
+        if (game.user.isGM || token.document.isOwner) return true;
+
+        // Always allow seeing AC of other Player Characters and Friendly tokens
+        const actor = token.actor;
+        if (actor?.type === 'character' || actor?.hasPlayerOwner) return true;
+        if (token.document.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY) return true;
+        if (token.document.disposition === CONST.TOKEN_DISPOSITIONS.SECRET) return false;
+
+        // For Neutral (0) and Hostile (-1) tokens: check if the token is in the same Combat Encounter as the players
+        return isTokenInPlayerCombat(token);
+    }
+
+    return game.user.isGM || token.document.isOwner;
+}
+
+function isTokenInPlayerCombat(token) {
+    if (!game.combats) return false;
+    const sceneId = canvas?.scene?.id;
+    for (const combat of game.combats) {
+        if (combat.scene && sceneId && combat.scene.id !== sceneId && combat !== game.combat) continue;
+        if (!combat.combatants?.size) continue;
+
+        // Token must be a non-hidden combatant in this encounter
+        const tokenInCombat = combat.combatants.some(
+            c => !c.hidden && (c.tokenId === token.id || c.token?.id === token.id)
+        );
+        if (!tokenInCombat) continue;
+
+        // At least one player character or player-owned combatant must also be in this encounter
+        const playerInCombat = combat.combatants.some(
+            c =>
+                c.actor?.isOwner ||
+                c.token?.isOwner ||
+                c.actor?.hasPlayerOwner ||
+                c.actor?.type === 'character' ||
+                (game.user.character && c.actorId === game.user.character.id)
+        );
+        if (playerInCombat) return true;
+    }
+    return false;
 }
 
 export function numbersVisible(visibleTo, { isGM, isOwner }) {
@@ -434,15 +560,19 @@ export function numbersVisible(visibleTo, { isGM, isOwner }) {
 // Patching & Cleanup
 // Wrapped at setup, after libWrapper is ready and before the canvas draws its first token.
 Hooks.once('setup', () => {
-    const target = 'foundry.canvas.placeables.Token.prototype.drawBars';
     const TokenClass = foundry.canvas.placeables.Token;
 
     if (typeof libWrapper !== 'undefined') {
-        libWrapper.register(MODULE_ID, target, drawBarsWrapper, 'WRAPPER');
+        libWrapper.register(MODULE_ID, 'foundry.canvas.placeables.Token.prototype.drawBars', drawBarsWrapper, 'WRAPPER');
+        libWrapper.register(MODULE_ID, 'foundry.canvas.placeables.Token.prototype._refreshState', refreshStateWrapper, 'WRAPPER');
     } else {
-        const orig = TokenClass.prototype.drawBars;
+        const origDrawBars = TokenClass.prototype.drawBars;
         TokenClass.prototype.drawBars = function (...args) {
-            return drawBarsWrapper.call(this, orig, ...args);
+            return drawBarsWrapper.call(this, origDrawBars, ...args);
+        };
+        const origRefreshState = TokenClass.prototype._refreshState;
+        TokenClass.prototype._refreshState = function (...args) {
+            return refreshStateWrapper.call(this, origRefreshState, ...args);
         };
     }
 });
@@ -453,7 +583,10 @@ function redrawAll() {
     style = tempStyle = cfg = null;
     styleVersion++;
     if (canvas?.ready) {
-        canvas.tokens.placeables.forEach(t => t.renderFlags?.set({ refreshBars: true }));
+        canvas.tokens.placeables.forEach(t => {
+            t.drawBars();
+            updateAcBadgeVisibility(t);
+        });
         if (canvas.hud?.token?.rendered) canvas.hud.token.render();
     }
 }

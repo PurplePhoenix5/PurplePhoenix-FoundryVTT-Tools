@@ -67,8 +67,8 @@ Hooks.once('init', () => {
     game.settings.register(MODULE_ID, 'enableBetterMeasure', {
         name: 'BETTERMEASURE.Enable',
         hint: 'BETTERMEASURE.EnableHint',
-        scope: 'world',
-        config: true,
+        scope: 'client',
+        config: false,
         type: Boolean,
         default: true,
         onChange: refreshAllRulers
@@ -78,7 +78,7 @@ Hooks.once('init', () => {
         name: 'BETTERMEASURE.Size',
         hint: 'BETTERMEASURE.SizeHint',
         scope: 'client',
-        config: true,
+        config: false,
         type: Number,
         default: 100,
         range: { min: 50, max: 250, step: 5 },
@@ -89,7 +89,7 @@ Hooks.once('init', () => {
         name: 'BETTERMEASURE.IncludeTokenRuler',
         hint: 'BETTERMEASURE.IncludeTokenRulerHint',
         scope: 'client',
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         onChange: refreshAllRulers

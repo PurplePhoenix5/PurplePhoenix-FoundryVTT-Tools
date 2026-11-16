@@ -4,8 +4,8 @@ Hooks.once('init', () => {
     game.settings.register(MODULE_ID, 'enableEasyFlip', {
         name: 'EASYFLIP.Enable',
         hint: 'EASYFLIP.EnableHint',
-        scope: 'world',
-        config: true,
+        scope: 'client',
+        config: false,
         type: Boolean,
         default: true
     });
