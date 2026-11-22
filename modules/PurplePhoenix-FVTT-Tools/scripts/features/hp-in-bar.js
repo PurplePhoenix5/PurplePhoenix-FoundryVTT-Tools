@@ -101,7 +101,7 @@ Hooks.once('init', () => {
 });
 
 
-// V13 Core Logic
+// V14 Core Logic
 function drawBarsWrapper(wrapped, ...args) {
     // Let Foundry draw the bars natively (with bar.clear() and positioning)
     const result = wrapped.call(this, ...args);
@@ -120,10 +120,17 @@ function drawBarsWrapper(wrapped, ...args) {
             const s = canvas?.dimensions?.uiScale || 1;
             const textRes = getTextResolution(s);
             const hp = this.actor.system?.attributes?.hp ?? {};
+            const bars = this.bars;
 
             ["bar1", "bar2"].forEach((b) => {
-                const bar = this.bars?.[b];
+                const bar = bars?.[b];
                 if (!bar) return;
+
+                if (bar._hpText && !bar._hpText.destroyed) {
+                    bar._hpText.destroy({ children: true });
+                    bar._hpText = null;
+                }
+
                 const attr = this.document.getBarAttribute(b);
                 const isHP = isHPBar(attr) && bar.visible;
 
@@ -136,7 +143,8 @@ function drawBarsWrapper(wrapped, ...args) {
 
                 // not HP || invisible || not for this user -> disable text
                 if (!allowed || !isHP || !bounds) {
-                    if (bar._hpText) bar._hpText.visible = false;
+                    const existingLabel = bars._hpLabels?.[b];
+                    if (existingLabel && !existingLabel.destroyed) existingLabel.visible = false;
                     return;
                 }
 
@@ -147,8 +155,9 @@ function drawBarsWrapper(wrapped, ...args) {
                 const maxValue = Number(attr.max || 0);
 
                 const parts = hpLabel({ value: baseValue, max: maxValue, temp: hp.temp }, tempText);
-                const label = hpTextContainer(bar);
+                const label = hpTextContainer(this, b);
                 label.visible = true;
+                bars._hpLabels.visible = true;
 
                 // Scale label container with canvas.dimensions.uiScale so font size is independent of map grid resolution
                 label.scale.set(s, s);
@@ -173,19 +182,25 @@ function drawBarsWrapper(wrapped, ...args) {
                     }
                 }
 
-                // Ensure text renders above bar graphics and temp shield
-                bar.sortableChildren = true;
-                label.zIndex = 100;
+                // Ensure text renders above bar graphics and temp shield without living inside PIXI.Graphics
+                bars.sortableChildren = true;
+                bars._hpLabels.zIndex = 100;
 
                 const width = bounds.width || this.w;
-                label.position.set(bounds.x + width / 2, bounds.y + bounds.height / 2);
+                label.position.set((bar.x || 0) + bounds.x + width / 2, (bar.y || 0) + bounds.y + bounds.height / 2);
             });
         } else {
+            if (this.bars?._hpLabels && !this.bars._hpLabels.destroyed) {
+                this.bars._hpLabels.visible = false;
+            }
             for (const b of ["bar1", "bar2"]) {
                 const bar = this.bars?.[b];
-                if (!bar) continue;
-                if (bar._hpText) bar._hpText.visible = false;
-                if (bar._tempShield) bar._tempShield.visible = false;
+                if (bar) {
+                    if (bar._hpText && !bar._hpText.destroyed) bar._hpText.visible = false;
+                    if (bar._tempShield) bar._tempShield.visible = false;
+                }
+                const lbl = this.bars?._hpLabels?.[b];
+                if (lbl && !lbl.destroyed) lbl.visible = false;
             }
         }
     } catch (err) {
@@ -213,11 +228,17 @@ function refreshStateWrapper(wrapped, ...args) {
 
 function hideModuleBarElements(token) {
     if (token?.bars) {
+        if (token.bars._hpLabels && !token.bars._hpLabels.destroyed) {
+            token.bars._hpLabels.visible = false;
+        }
         for (const b of ["bar1", "bar2"]) {
             const bar = token.bars[b];
-            if (!bar) continue;
-            if (bar._hpText) bar._hpText.visible = false;
-            if (bar._tempShield) bar._tempShield.visible = false;
+            if (bar) {
+                if (bar._hpText && !bar._hpText.destroyed) bar._hpText.visible = false;
+                if (bar._tempShield) bar._tempShield.visible = false;
+            }
+            const lbl = token.bars._hpLabels?.[b];
+            if (lbl && !lbl.destroyed) lbl.visible = false;
         }
         if (token.bars._acBadge) token.bars._acBadge.visible = false;
     }
@@ -236,8 +257,8 @@ function barBounds(bar) {
 
 /** Compute supersampled resolution for crisp text at any map grid size or DPI. */
 function getTextResolution(s = 1) {
-    const dpr = window.devicePixelRatio || 1;
-    return Math.min(8, Math.max(3, Math.ceil(2.5 * Math.max(1, s) * dpr)));
+    const dpr = Math.max(window.devicePixelRatio || 1, canvas?.app?.renderer?.resolution || 1);
+    return Math.min(8, Math.max(4, Math.ceil(3 * Math.max(1, s) * dpr)));
 }
 
 /** Sets a text's content, style, and high-DPI resolution only if they differ. */
@@ -248,11 +269,21 @@ function setText(text, content, textStyle, resolution) {
     if (text.style !== textStyle) text.style = textStyle;
 }
 
-/** The HP text as three pieces, so the temp HP can have a colour of its own. */
-function hpTextContainer(bar) {
-    let label = bar._hpText;
+/** The HP text as three pieces in a sibling container on `token.bars` so Graphics bitmap caching on `bar` never rasterizes it. */
+function hpTextContainer(token, barKey) {
+    const bars = token.bars;
+    let group = bars._hpLabels;
+    if (!group || group.destroyed) {
+        group = new PIXI.Container();
+        group.eventMode = 'none';
+        group.interactiveChildren = false;
+        group.zIndex = 100;
+        bars.sortableChildren = true;
+        bars._hpLabels = bars.addChild(group);
+    }
+    let label = group[barKey];
     if (label && !label.destroyed && label._value) return label;
-    if (label && !label.destroyed) label.destroy();
+    if (label && !label.destroyed) label.destroy({ children: true });
     const TextClass = foundry.canvas.containers?.PreciseText ?? PIXI.Text;
     label = new PIXI.Container();
     label.eventMode = 'none';
@@ -263,7 +294,7 @@ function hpTextContainer(bar) {
         t.anchor.set(0, 0.5);
         label[key] = label.addChild(t);
     }
-    bar._hpText = bar.addChild(label);
+    group[barKey] = group.addChild(label);
     return label;
 }
 
@@ -400,7 +431,7 @@ function updateAcBadgeVisibility(token) {
 
     const { enableHpInBar } = settings();
     const ac = enableHpInBar ? readAc(token.actor) : null;
-    const isSecret = (token.document.disposition === CONST.TOKEN_DISPOSITIONS.SECRET) && !token.isOwner;
+    const isSecret = Boolean(token.document.isSecret);
     if (!ac || isSecret || !canSeeAc(token)) {
         badge.visible = false;
         return;
@@ -461,7 +492,8 @@ function readAc(actor) {
 for (const hook of ['updateActor', 'createActiveEffect', 'updateActiveEffect', 'deleteActiveEffect',
     'createItem', 'updateItem', 'deleteItem']) {
     Hooks.on(hook, doc => {
-        const actor = doc instanceof Actor ? doc : (doc.parent instanceof Actor ? doc.parent : doc.parent?.actor);
+        const ActorDoc = foundry.documents?.Actor ?? Actor;
+        const actor = doc instanceof ActorDoc ? doc : (doc.parent instanceof ActorDoc ? doc.parent : doc.parent?.actor);
         actor?.getActiveTokens?.().forEach(t => t.renderFlags?.set({ refreshBars: true }));
     });
 }

@@ -103,10 +103,11 @@ function rulerWaypointLabelContextWrapper(wrapped, waypoint, state) {
 
     const s = getMeasureScale();
     context.uiScale = s;
-    if (waypoint?.ray?.B) {
+    const pt = waypoint?.ray?.B ?? waypoint?.center ?? waypoint;
+    if (pt && Number.isFinite(pt.x) && Number.isFinite(pt.y)) {
         context.position = {
-            x: waypoint.ray.B.x,
-            y: waypoint.ray.B.y - (16 * s)
+            x: pt.x,
+            y: pt.y - (16 * s)
         };
     }
     return context;
@@ -144,10 +145,11 @@ function tokenRulerWaypointLabelContextWrapper(wrapped, waypoint, state) {
 
     const s = getMeasureScale();
     context.uiScale = s;
-    if (waypoint?.ray?.B) {
+    const pt = waypoint?.center ?? waypoint?.ray?.B;
+    if (pt && Number.isFinite(pt.x) && Number.isFinite(pt.y)) {
         context.position = {
-            x: waypoint.ray.B.x,
-            y: waypoint.ray.B.y + (waypoint.next ? 0 : 0.5 * (this.token?.h || 0)) + (16 * s)
+            x: pt.x,
+            y: pt.y + (waypoint.next ? 0 : 0.5 * (this.token?.h || 0)) + (16 * s)
         };
     }
     return context;

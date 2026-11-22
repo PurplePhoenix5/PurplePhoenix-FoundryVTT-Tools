@@ -1,0 +1,624 @@
+/* PurplePhoenix FVTT Tools — Styles */
+
+:root,
+body {
+  --pp-accent: #a855f7;
+  --pp-accent-soft: rgba(168, 85, 247, 0.22);
+  --pp-pause-color: #a855f7;
+  --pp-surface-light: #f7f3e8ee;
+  --pp-surface-dark: #111111ee;
+  --pp-card-bg: #ffffff;
+  --pp-input-bg: var(--pp-surface-light);
+  --pp-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+body.theme-dark,
+.themed.theme-dark {
+  --pp-input-bg: var(--pp-surface-dark);
+  --pp-card-bg: #26262a;
+}
+
+/* ==========================================================================
+   Pause Border
+   ========================================================================== */
+
+body.pp-paused::after {
+  position: fixed;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  box-shadow: var(--pp-pause-color, #a855f7) 0px 0px 100px 50px inset;
+  z-index: calc(var(--z-index-canvas, 0) + 1);
+  opacity: 0.55;
+}
+
+body.pp-paused.pp-pause-replace-icon .dnd5e2#pause img {
+  display: none;
+}
+
+body.pp-paused.pp-pause-replace-icon .dnd5e2#pause figcaption {
+  font-size: 0;
+  color: transparent;
+  letter-spacing: normal;
+}
+
+body.pp-paused.pp-pause-replace-icon .dnd5e2#pause figcaption::after {
+  content: "\f04c";
+  font-family: var(--font-awesome);
+  font-weight: 900;
+  font-size: var(--font-size-64, 64px);
+  color: var(--pp-pause-color, #a855f7);
+  opacity: 0.7;
+  line-height: var(--font-size-64, 64px);
+  text-shadow: 0 0 18px var(--pp-pause-color, #a855f7);
+}
+
+/* ==========================================================================
+   Active Effects Manager
+   ========================================================================== */
+
+.pp-effects-manager {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.pp-effects-manager .pp-effects-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 4px;
+  padding-bottom: 2px;
+  font-size: 1em;
+  border-bottom: 1px solid var(--color-border-light-tertiary, #888);
+}
+
+.pp-effects-manager .pp-effects-count {
+  margin-left: auto;
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+.pp-effects-manager .pp-effects-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pp-effects-manager .pp-effects-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  border-bottom: 1px solid var(--color-border-light-tertiary, rgba(128, 128, 128, 0.25));
+}
+
+.pp-effects-manager .pp-effects-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border: none;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.pp-effects-manager .pp-effects-icon[src$=".svg"] {
+  background: rgba(0, 0, 0, 0.65);
+  padding: 3px;
+}
+
+.pp-effects-manager .pp-effects-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.pp-effects-manager .pp-effects-name {
+  font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pp-effects-manager .pp-effects-meta {
+  font-size: 0.8em;
+  opacity: 0.7;
+  overflow-wrap: anywhere;
+}
+
+.pp-effects-manager .pp-effects-empty {
+  margin: 2px 0 6px;
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.pp-effects-manager .pp-effects-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex: 0 0 40px;
+  cursor: pointer;
+}
+
+.pp-effects-manager .pp-effects-switch input {
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.pp-effects-manager .pp-effects-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+  background: #777;
+  pointer-events: none;
+  transition: background 0.15s;
+}
+
+.pp-effects-manager .pp-effects-track::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+
+.pp-effects-manager input:checked + .pp-effects-track {
+  background: #3a9a4f;
+}
+
+.pp-effects-manager input:checked + .pp-effects-track::after {
+  transform: translateX(18px);
+}
+
+.pp-effects-manager input:focus-visible + .pp-effects-track {
+  outline: 2px solid var(--pp-accent);
+  outline-offset: 2px;
+}
+
+.pp-effects-manager input:disabled + .pp-effects-track {
+  opacity: 0.4;
+}
+
+/* ==========================================================================
+   Expanded Status Effects HUD
+   ========================================================================== */
+
+#token-hud.pp-status-effects .status-effects {
+  width: unset !important;
+  --effect-size: 24px;
+  --effect-gap: 4px;
+  grid-template-columns: repeat(var(--pp-effect-columns, 4), 138px) !important;
+  font-size: var(--font-size-13, 13px);
+  line-height: var(--effect-size);
+  text-align: left;
+  background: var(--control-bg-color, rgba(15, 15, 20, 0.88));
+  backdrop-filter: blur(4px);
+  max-height: 55vh;
+  padding: 6px;
+  gap: 4px 6px;
+}
+
+#token-hud.pp-status-effects .status-effects .pp-effect-container {
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  color: var(--control-icon-color, rgba(255, 255, 255, 0.8));
+  min-width: 0;
+}
+
+#token-hud.pp-status-effects .status-effects .pp-effect-container:hover {
+  background: var(--control-hover-bg-color, rgba(255, 255, 255, 0.1));
+  color: var(--control-hover-icon-color, #ffffff);
+}
+
+#token-hud.pp-status-effects .status-effects .pp-effect-container.active {
+  background: var(--pp-accent-soft);
+  border-color: rgba(168, 85, 247, 0.75);
+  color: var(--control-active-icon-color, #ffffff);
+}
+
+#token-hud.pp-status-effects .status-effects .pp-effect-container.overlay {
+  border-color: var(--control-active-border-color, #ff6400);
+}
+
+#token-hud.pp-status-effects .status-effects .pp-effect-container img.effect-control {
+  flex: 0 0 var(--effect-size);
+  width: var(--effect-size);
+  height: var(--effect-size);
+}
+
+#token-hud.pp-status-effects .status-effects .pp-effect-container:hover img.effect-control,
+#token-hud.pp-status-effects .status-effects .pp-effect-container.active img.effect-control {
+  opacity: 1;
+}
+
+#token-hud.pp-status-effects .status-effects .pp-effect-container img.effect-control.overlay {
+  border: none;
+}
+
+#token-hud.pp-status-effects .status-effects .pp-effect-name {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   Simple Light Token HUD & Palette (Left Column)
+   ========================================================================== */
+
+#token-hud .control-icon.pp-simple-light-button img {
+  width: 28px;
+  height: 28px;
+  border: none;
+  pointer-events: none;
+  object-fit: contain;
+}
+
+#token-hud .control-icon.pp-simple-light-button.pp-light-lit {
+  box-shadow: inset 0 0 0 1px var(--pp-accent), 0 0 8px rgba(168, 85, 247, 0.55);
+}
+
+#token-hud .col.left .palette.pp-light-palette {
+  width: 245px;
+  max-height: min(55vh, 420px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  gap: 2px;
+  background: rgba(20, 20, 24, 0.94);
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+}
+
+#token-hud .col.left .palette.pp-light-palette button.pp-light-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  height: auto;
+  padding: 5px 7px;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #f0f0e0;
+  text-align: left;
+  box-shadow: none;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.2;
+}
+
+#token-hud .col.left .palette.pp-light-palette button.pp-light-option:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+#token-hud .col.left .palette.pp-light-palette button.pp-light-option.pp-preset-active {
+  background: rgba(168, 85, 247, 0.24);
+  border-color: rgba(168, 85, 247, 0.85);
+}
+
+#token-hud .col.left .palette.pp-light-palette .pp-light-option-icon {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#token-hud .col.left .palette.pp-light-palette .pp-light-option-icon img {
+  width: 26px;
+  height: 26px;
+  border: none;
+  object-fit: contain;
+  filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.85));
+}
+
+#token-hud .col.left .palette.pp-light-palette .pp-light-option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 1px;
+}
+
+#token-hud .col.left .palette.pp-light-palette .pp-light-option-name {
+  font-weight: 700;
+  font-size: 0.92em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#token-hud .col.left .palette.pp-light-palette .pp-light-option-meta {
+  font-size: 0.75em;
+  color: #b8b8c4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==========================================================================
+   Simple Light Configuration Window (.pp-light-settings)
+   ========================================================================== */
+
+.pp-light-settings .window-content {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.pp-light-settings .pp-light-tabs.vertical {
+  align-self: stretch;
+  height: auto;
+  gap: 8px;
+  flex: 0 0 165px;
+  max-height: min(65vh, 44rem);
+  overflow-y: auto;
+}
+
+.pp-light-settings .pp-light-tabs a {
+  border: 1px solid var(--color-tabs-border);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.pp-light-settings .pp-light-tabs a.active {
+  border-color: var(--pp-accent);
+  background: var(--pp-accent-soft);
+  text-shadow: none;
+}
+
+.pp-light-settings-body {
+  min-width: 0;
+  min-height: 24rem;
+  flex: 1;
+}
+
+.pp-light-settings .form-footer {
+  flex: 1 0 100%;
+}
+
+.pp-light-tab {
+  max-height: min(65vh, 44rem);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.pp-light-tab.active {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pp-light-row {
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  box-shadow: var(--pp-shadow);
+  background: var(--pp-card-bg);
+  border: none;
+  border-radius: 6px;
+}
+
+.pp-light-row-title {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pp-light-icon-preview {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 2px;
+  object-fit: contain;
+  flex: 0 0 26px;
+}
+
+.pp-light-row-title button {
+  width: var(--button-size);
+  height: var(--button-size);
+  margin: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  flex: 0;
+  padding: 0 4px;
+}
+
+.pp-light-hidden {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.pp-light-row-title span {
+  flex: 1 0;
+}
+
+.pp-light-row-title span.hint {
+  font-style: italic;
+  flex: 0;
+  white-space: nowrap;
+}
+
+.pp-light-hidden .pp-light-row-title > input {
+  opacity: 0.6;
+}
+
+.pp-light-fields,
+.pp-light-icon-row,
+.pp-type-animation,
+.pp-type-fields {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1 0 100%;
+}
+
+.pp-light-row label {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  min-width: 0;
+  font-size: var(--font-size-12);
+  align-items: center;
+  text-wrap-mode: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  flex: 1;
+}
+
+.pp-light-row label.pp-wide {
+  flex: 2;
+}
+
+.pp-light-row color-picker {
+  gap: 8px;
+}
+
+.pp-light-row file-picker {
+  flex: 1;
+  min-width: 0;
+}
+
+.pp-light-row input,
+.pp-light-row select {
+  width: 100%;
+  flex: 1 0 20%;
+  background: var(--pp-input-bg);
+}
+
+.pp-light-row input[type="checkbox"],
+.pp-light-row input[type="radio"] {
+  --checkbox-background-color: var(--pp-input-bg);
+  background: unset;
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.pp-light-row input[type="color"] {
+  aspect-ratio: 1;
+  flex: 0;
+  padding: 0;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+}
+
+.pp-light-row .pp-darkness {
+  flex: none;
+}
+
+.pp-light-row .pp-darkness input {
+  flex: 0;
+}
+
+.pp-type-advanced {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 8px;
+  min-width: 0;
+}
+
+.pp-light-row .pp-type-advanced label {
+  display: flex;
+  overflow: visible;
+  justify-content: space-between;
+}
+
+.pp-light-row .pp-type-advanced label input[type="range"] {
+  flex: 1;
+  width: unset;
+  padding: 0 10px;
+}
+
+.pp-light-row .pp-type-advanced label select[data-field="coloration"] {
+  flex: 0 calc(100% - 150px);
+  width: unset;
+}
+
+.pp-light-row .pp-type-advanced label input[type="number"] {
+  flex: 0 10%;
+  width: unset;
+}
+
+.pp-type-advanced range-picker {
+  min-width: 0;
+  gap: 8px;
+  flex: 0 calc(100% - 150px);
+  justify-content: flex-end;
+}
+
+.pp-light-add {
+  align-self: flex-start;
+  width: 165px;
+  position: absolute;
+  left: 1rem;
+  bottom: calc(var(--button-size) + 2.5rem);
+  background: var(--pp-accent);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.pp-light-add:hover {
+  filter: brightness(1.1);
+}
+
+/* ==========================================================================
+   Readable Discarded Dice
+   ========================================================================== */
+
+body.pp-readable-dice .dice-tooltip .dice-rolls .roll.discarded,
+body.pp-readable-dice .dice-tooltip .dice-rolls .roll.rerolled {
+  color: #000000;
+  filter: grayscale(1) opacity(var(--pp-discarded-dice-opacity, 0.7));
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.55);
+  transform: scale(0.92);
+}
+
+body.pp-readable-dice .dice-tooltip .dice-rolls .roll.discarded:is(.max, .success),
+body.pp-readable-dice .dice-tooltip .dice-rolls .roll.rerolled:is(.max, .success) {
+  color: #18520b;
+  filter: sepia(0.35) hue-rotate(60deg) saturate(0.75) opacity(var(--pp-discarded-dice-opacity, 0.7));
+}
+
+body.pp-readable-dice .dice-tooltip .dice-rolls .roll.discarded:is(.min, .failure),
+body.pp-readable-dice .dice-tooltip .dice-rolls .roll.rerolled:is(.min, .failure) {
+  color: #aa0200;
+  filter: sepia(0.35) hue-rotate(-60deg) saturate(0.75) opacity(var(--pp-discarded-dice-opacity, 0.7));
+}
+

@@ -1,4 +1,6 @@
 // scripts/settings-ui.js
+import { openSimpleLightSettings } from './features/simple-light-settings.js';
+
 const MODULE_ID = 'PurplePhoenix-FVTT-Tools';
 
 const FEATURE_GROUPS = [
@@ -22,15 +24,6 @@ const FEATURE_GROUPS = [
     ]
   },
   {
-    id: 'easy-temp-hp',
-    icon: 'fa-solid fa-shield-heart',
-    titleKey: 'SETTINGSUI.GroupEasyTempHpTitle',
-    descKey: 'SETTINGSUI.GroupEasyTempHpDesc',
-    enableKey: 'enableEasyTempHp',
-    restricted: false,
-    keys: ['enableEasyTempHp', 'autoSetBar2TempHp']
-  },
-  {
     id: 'better-measure',
     icon: 'fa-solid fa-ruler-combined',
     titleKey: 'SETTINGSUI.GroupBetterMeasureTitle',
@@ -38,15 +31,6 @@ const FEATURE_GROUPS = [
     enableKey: 'enableBetterMeasure',
     restricted: false,
     keys: ['enableBetterMeasure', 'betterMeasureSize', 'betterMeasureIncludeTokenRuler']
-  },
-  {
-    id: 'easy-templates',
-    icon: 'fa-solid fa-compass-drafting',
-    titleKey: 'SETTINGSUI.GroupEasyTemplatesTitle',
-    descKey: 'SETTINGSUI.GroupEasyTemplatesDesc',
-    enableKey: 'enableEasyTemplates',
-    restricted: true,
-    keys: ['enableEasyTemplates', 'easyTemplatesSnapStep']
   },
   {
     id: 'easy-send',
@@ -64,7 +48,34 @@ const FEATURE_GROUPS = [
     descKey: 'SETTINGSUI.GroupSimpleLightDesc',
     enableKey: 'enableSimpleLight',
     restricted: false,
-    keys: ['enableSimpleLight']
+    keys: ['enableSimpleLight', 'simpleLightAllowPlayers']
+  },
+  {
+    id: 'effects-manager',
+    icon: 'fa-solid fa-wand-magic-sparkles',
+    titleKey: 'SETTINGSUI.GroupEffectsManagerTitle',
+    descKey: 'SETTINGSUI.GroupEffectsManagerDesc',
+    enableKey: 'enableEffectsManager',
+    restricted: true,
+    keys: ['enableEffectsManager', 'effectsManagerPlayers']
+  },
+  {
+    id: 'status-effects',
+    icon: 'fa-solid fa-table-list',
+    titleKey: 'SETTINGSUI.GroupStatusEffectsTitle',
+    descKey: 'SETTINGSUI.GroupStatusEffectsDesc',
+    enableKey: 'enableStatusEffects',
+    restricted: false,
+    keys: ['enableStatusEffects', 'statusEffectsColumns']
+  },
+  {
+    id: 'pause-border',
+    icon: 'fa-solid fa-circle-pause',
+    titleKey: 'SETTINGSUI.GroupPauseBorderTitle',
+    descKey: 'SETTINGSUI.GroupPauseBorderDesc',
+    enableKey: 'enablePauseBorder',
+    restricted: true,
+    keys: ['enablePauseBorder', 'pauseBorderColor', 'pauseBorderReplaceIcon']
   },
   {
     id: 'easy-flip',
@@ -74,6 +85,24 @@ const FEATURE_GROUPS = [
     enableKey: 'enableEasyFlip',
     restricted: false,
     keys: ['enableEasyFlip']
+  },
+  {
+    id: 'show-ranges',
+    icon: 'fa-solid fa-bullseye',
+    titleKey: 'SETTINGSUI.GroupShowRangesTitle',
+    descKey: 'SETTINGSUI.GroupShowRangesDesc',
+    enableKey: 'enableShowRanges',
+    restricted: false,
+    keys: ['enableShowRanges', 'showRangesMode']
+  },
+  {
+    id: 'readable-dice',
+    icon: 'fa-solid fa-dice-d20',
+    titleKey: 'SETTINGSUI.GroupReadableDiceTitle',
+    descKey: 'SETTINGSUI.GroupReadableDiceDesc',
+    enableKey: 'enableReadableDice',
+    restricted: false,
+    keys: ['enableReadableDice', 'readableDiceOpacity']
   }
 ];
 
@@ -412,6 +441,7 @@ export class PurplePhoenixSettingsApp extends foundry.applications.api.Applicati
 
   async _renderHTML(_context, _options) {
     ensureSettingsCenterStyles();
+    const canModifyWorld = game.user.isGM || game.user.can('SETTINGS_MODIFY');
     const groups = this.getVisibleGroups();
     if (!groups.some(g => g.id === this.activeFeatureId) && groups.length > 0) {
       this.activeFeatureId = groups[0].id;
@@ -451,25 +481,45 @@ export class PurplePhoenixSettingsApp extends foundry.applications.api.Applicati
 
         const cardsHtml = g.visibleSettings.map(({ key, setting }) => this.#renderSettingCard(key, setting, g.enableKey)).join('');
 
-        const extraInfoHtml =
-          g.id === 'easy-flip'
-            ? `
-              <div class="pp-setting-card">
-                <div class="pp-setting-info">
-                  <div class="pp-setting-title-row">
-                    <span class="pp-setting-title">${foundry.utils.escapeHTML(game.i18n.localize('EASYFLIP.KeybindName'))}</span>
-                  </div>
-                  <p class="pp-setting-hint">${foundry.utils.escapeHTML(game.i18n.localize('SETTINGSUI.KeybindInfoHint'))}</p>
+        let extraInfoHtml = '';
+        if (g.id === 'easy-flip') {
+          extraInfoHtml = `
+            <div class="pp-setting-card">
+              <div class="pp-setting-info">
+                <div class="pp-setting-title-row">
+                  <span class="pp-setting-title">${foundry.utils.escapeHTML(game.i18n.localize('EASYFLIP.KeybindName'))}</span>
                 </div>
-                <div class="pp-setting-control">
-                  <button type="button" data-action="openControlsConfig">
-                    <i class="fa-solid fa-keyboard" inert></i>
-                    <span>${foundry.utils.escapeHTML(game.i18n.localize('SETTINGSUI.OpenControlsBtn'))}</span>
-                  </button>
-                </div>
+                <p class="pp-setting-hint">${foundry.utils.escapeHTML(game.i18n.localize('SETTINGSUI.KeybindInfoHint'))}</p>
               </div>
-            `
-            : '';
+              <div class="pp-setting-control">
+                <button type="button" data-action="openControlsConfig">
+                  <i class="fa-solid fa-keyboard" inert></i>
+                  <span>${foundry.utils.escapeHTML(game.i18n.localize('SETTINGSUI.OpenControlsBtn'))}</span>
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (g.id === 'simple-light' && canModifyWorld) {
+          extraInfoHtml = `
+            <div class="pp-setting-card">
+              <div class="pp-setting-info">
+                <div class="pp-setting-title-row">
+                  <span class="pp-setting-title">${foundry.utils.escapeHTML(game.i18n.localize('SIMPLELIGHT.ConfigMenuName'))}</span>
+                  <span class="pp-badge pp-badge-world" data-tooltip="${foundry.utils.escapeHTML(game.i18n.localize('SETTINGSUI.BadgeGMTooltip'))}">
+                    ${foundry.utils.escapeHTML(game.i18n.localize('SETTINGSUI.BadgeGM'))}
+                  </span>
+                </div>
+                <p class="pp-setting-hint">${foundry.utils.escapeHTML(game.i18n.localize('SIMPLELIGHT.ConfigMenuHint'))}</p>
+              </div>
+              <div class="pp-setting-control">
+                <button type="button" data-action="openLightSettings">
+                  <i class="fa-solid fa-lightbulb" inert></i>
+                  <span>${foundry.utils.escapeHTML(game.i18n.localize('SIMPLELIGHT.ConfigMenuButton'))}</span>
+                </button>
+              </div>
+            </div>
+          `;
+        }
 
         return `
           <section class="pp-feature-pane ${isActive} ${isEnabled ? '' : 'pp-pane-disabled'}" data-feature-pane="${g.id}">
@@ -649,8 +699,14 @@ export class PurplePhoenixSettingsApp extends foundry.applications.api.Applicati
     // 5. Open Configure Controls button (for Easy Flip Token)
     root.querySelector('[data-action="openControlsConfig"]')?.addEventListener('click', ev => {
       ev.preventDefault();
-      const ControlsApp = foundry.applications?.sidebar?.apps?.ControlsConfig ?? ControlsConfig;
-      if (ControlsApp) new ControlsApp().render(true);
+      const ControlsApp = foundry.applications?.sidebar?.apps?.ControlsConfig;
+      if (ControlsApp) new ControlsApp().render({ force: true });
+    });
+
+    // 5b. Open Simple Light Configuration window
+    root.querySelector('[data-action="openLightSettings"]')?.addEventListener('click', ev => {
+      ev.preventDefault();
+      openSimpleLightSettings();
     });
 
     // 6. Reset current feature defaults
@@ -767,7 +823,7 @@ function createFeatureMenuClass(featureId) {
 }
 
 Hooks.once('init', () => {
-  // Register a clean submenu button for each of the 7 features in Foundry's standard Settings window
+  // Register a clean submenu button for each feature in Foundry's standard Settings window
   for (const group of FEATURE_GROUPS) {
     game.settings.registerMenu(MODULE_ID, `menu_${group.id}`, {
       name: group.titleKey,

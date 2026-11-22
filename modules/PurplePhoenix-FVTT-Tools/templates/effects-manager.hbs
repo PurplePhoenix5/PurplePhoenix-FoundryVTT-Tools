@@ -1,0 +1,29 @@
+<div class="pp-effects-manager">
+  {{#each sections}}
+  <section>
+    <h3 class="pp-effects-heading">
+      <i class="fa-solid {{icon}}" aria-hidden="true"></i>
+      {{label}} <span class="pp-effects-count">{{effects.length}}</span>
+    </h3>
+    {{#if effects.length}}
+    <ul class="pp-effects-list">
+      {{#each effects}}
+      <li class="pp-effects-row">
+        <img class="pp-effects-icon" src="{{img}}" alt="">
+        <div class="pp-effects-text">
+          <span class="pp-effects-name">{{name}}</span>
+          {{#if meta}}<span class="pp-effects-meta">{{meta}}</span>{{/if}}
+        </div>
+        <label class="pp-effects-switch">
+          <input type="checkbox" data-key="{{key}}" aria-label="{{toggleAriaLabel}}" {{#if enabled}}checked{{/if}} {{#if readOnly}}disabled{{/if}}>
+          <span class="pp-effects-track" aria-hidden="true"></span>
+        </label>
+      </li>
+      {{/each}}
+    </ul>
+    {{else}}
+    <p class="pp-effects-empty">{{localize "EFFECTSMANAGER.None"}}</p>
+    {{/if}}
+  </section>
+  {{/each}}
+</div>

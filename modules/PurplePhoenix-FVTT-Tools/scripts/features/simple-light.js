@@ -1,160 +1,364 @@
-const MODULE_ID = 'PurplePhoenix-FVTT-Tools';
+// Simple Light feature — configurable Token HUD light palette on the left HUD column
+import {
+  MODULE_ID,
+  LIGHT_CONFIG_SETTING,
+  DEFAULT_LIGHT_CONFIG,
+  getLightPresets,
+  addLightTypeMacro,
+  addLightMacro
+} from './simple-light-config.js';
+import { openSimpleLightSettings } from './simple-light-settings.js';
+
+function refreshTokenHud() {
+  const tokenHud = canvas?.hud?.token;
+  if (!tokenHud) return;
+  if (!isEnabled() && tokenHud.activePalette === 'simple-light') {
+    tokenHud.togglePalette(null);
+  }
+  if (tokenHud.rendered) tokenHud.render();
+}
+
+function isEnabled() {
+  return (
+    Boolean(game.settings.get(MODULE_ID, 'enableSimpleLight')) &&
+    (game.user.isGM || Boolean(game.settings.get(MODULE_ID, 'simpleLightAllowPlayers')))
+  );
+}
+
+function canUpdateToken(tokenDoc) {
+  return Boolean(tokenDoc?.isOwner && tokenDoc.canUserModify(game.user, 'update'));
+}
+
+function isManagedLightEffect(effect) {
+  return Boolean(
+    effect.getFlag(MODULE_ID, 'lightPicker') ||
+      effect.getFlag('mini-tweaks', 'lightPicker') ||
+      effect.getFlag('mini-tweaks', 'lightPickerTorch') === true
+  );
+}
+
+async function applyDnd5eActorLight(actor, preset) {
+  const ownExisting = actor.effects.filter(e => Boolean(e.getFlag(MODULE_ID, 'lightPicker')));
+  const foreignExisting = actor.effects.filter(
+    e => !e.getFlag(MODULE_ID, 'lightPicker') && isManagedLightEffect(e)
+  );
+
+  if (preset.action === 'none') {
+    const toDelete = [...ownExisting, ...foreignExisting].map(e => e.id);
+    if (toDelete.length) await actor.deleteEmbeddedDocuments('ActiveEffect', toDelete);
+    return toDelete.length > 0;
+  }
+
+  const effectData = {
+    name: preset.label,
+    img: preset.img,
+    type: 'base',
+    disabled: false,
+    transfer: false,
+    statuses: [],
+    showIcon: CONST.ACTIVE_EFFECT_SHOW_ICON.ALWAYS,
+    start: {
+      time: game.time.worldTime,
+      combat: null,
+      combatant: null,
+      initiative: null,
+      round: null,
+      turn: null
+    },
+    duration: { value: preset.duration, units: 'seconds', expiry: null, expired: false },
+    origin: actor.uuid,
+    system: {
+      changes: Object.entries(preset.light).map(([key, value]) => ({
+        key: `token.light.${key}`,
+        type: 'override',
+        value: foundry.utils.deepClone(value),
+        phase: 'initial',
+        priority: 50
+      }))
+    },
+    flags: { [MODULE_ID]: { lightPicker: preset.action } }
+  };
+
+  if (foreignExisting.length) {
+    await actor.deleteEmbeddedDocuments('ActiveEffect', foreignExisting.map(e => e.id));
+  }
+
+  if (ownExisting.length) {
+    await ownExisting[0].update(effectData);
+    if (ownExisting.length > 1) {
+      await actor.deleteEmbeddedDocuments('ActiveEffect', ownExisting.slice(1).map(e => e.id));
+    }
+  } else {
+    effectData._id = foundry.utils.randomID();
+    await actor.createEmbeddedDocuments('ActiveEffect', [effectData]);
+  }
+  return true;
+}
+
+/**
+ * Apply a configured light preset (or 'none' to extinguish) to one or more TokenDocuments.
+ * @param {TokenDocument[]} tokens
+ * @param {string} action
+ */
+export async function applyLightPreset(tokens, action) {
+  const normalizedAction = action === 'extinguish' ? 'none' : action;
+  const presets = getLightPresets();
+  const preset = presets.find(entry => entry.action === normalizedAction);
+  if (!preset || !isEnabled() || !tokens.length) return false;
+
+  const scene = tokens[0].parent;
+  if (
+    scene !== canvas.scene ||
+    tokens.some(token => token.parent !== scene || scene.tokens.get(token.id) !== token || !canUpdateToken(token))
+  ) {
+    ui.notifications.warn(game.i18n.localize('SIMPLELIGHT.Errors.TokensUnavailable'));
+    return false;
+  }
+
+  const useDnd5eEffects = game.system.id === 'dnd5e';
+  const actorTokens = useDnd5eEffects ? tokens.filter(t => t.actor) : [];
+  const directTokens = useDnd5eEffects ? tokens.filter(t => !t.actor) : tokens;
+
+  const actors = new Map(actorTokens.map(token => [token.actor.uuid, token.actor]));
+  if (Array.from(actors.values()).some(actor => !actor.isOwner || !actor.canUserModify(game.user, 'update'))) {
+    ui.notifications.warn(game.i18n.localize('SIMPLELIGHT.Errors.ActorsNoPermission'));
+    return false;
+  }
+
+  for (const actor of actors.values()) {
+    await applyDnd5eActorLight(actor, preset);
+  }
+
+  // Extinguish also clears any legacy direct token.light overrides (e.g. from pre-2.0 Simple Light).
+  const directUpdates = [];
+  const clearLight = {
+    bright: 0,
+    dim: 0,
+    angle: 360,
+    color: null,
+    negative: false,
+    animation: { type: null }
+  };
+
+  for (const token of directTokens) {
+    directUpdates.push({
+      _id: token.id,
+      light: foundry.utils.deepClone(preset.action === 'none' ? clearLight : preset.light)
+    });
+  }
+
+  if (preset.action === 'none') {
+    for (const token of actorTokens) {
+      const src = token._source?.light;
+      if (src && (src.bright > 0 || src.dim > 0 || src.negative)) {
+        directUpdates.push({ _id: token.id, light: foundry.utils.deepClone(clearLight) });
+      }
+    }
+  }
+
+  if (directUpdates.length) {
+    await scene.updateEmbeddedDocuments('Token', directUpdates);
+  }
+
+  return true;
+}
+
+function formatPresetMeta(preset) {
+  if (preset.action === 'none') {
+    return game.i18n.localize('SIMPLELIGHT.ExtinguishDesc');
+  }
+  const parts = [];
+  if (preset.negative) {
+    const range = preset.bright || preset.dim;
+    parts.push(game.i18n.format('SIMPLELIGHT.MetaDarkness', { range }));
+  } else {
+    parts.push(`${preset.bright} / ${preset.dim} ft.`);
+  }
+  if (preset.angle && preset.angle < 360) {
+    parts.push(`${preset.angle}°`);
+  }
+  if (preset.duration) {
+    const durStr =
+      preset.duration % 3600 === 0
+        ? game.i18n.format('SIMPLELIGHT.MetaHours', { count: preset.duration / 3600 })
+        : game.i18n.format('SIMPLELIGHT.MetaMinutes', { count: Math.round(preset.duration / 60) });
+    parts.push(durStr);
+  }
+  return parts.join(' · ');
+}
+
+function detectActiveLightId(hud, presets) {
+  const actorEffect = hud.actor?.effects?.find(e => !e.disabled && isManagedLightEffect(e));
+  if (actorEffect) {
+    return actorEffect.getFlag(MODULE_ID, 'lightPicker') || actorEffect.getFlag('mini-tweaks', 'lightPicker') || null;
+  }
+
+  const docLight = hud.document?.light;
+  if (!docLight) return 'none';
+  const bright = docLight.bright || 0;
+  const dim = docLight.dim || 0;
+  const angle = docLight.angle ?? 360;
+  const negative = Boolean(docLight.negative);
+
+  if (bright === 0 && dim === 0 && !negative) return 'none';
+
+  const matched = presets.find(
+    p => p.action !== 'none' && p.bright === bright && p.dim === dim && p.angle === angle && p.negative === negative
+  );
+  return matched ? matched.action : null;
+}
 
 Hooks.once('init', () => {
-    game.settings.register(MODULE_ID, 'enableSimpleLight', {
-        name: 'SIMPLELIGHT.Enable',
-        hint: 'SIMPLELIGHT.EnableHint',
-        scope: 'client',
-        config: false,
-        type: Boolean,
-        default: true,
-        onChange: () => {
-            if (canvas?.hud?.token?.rendered) canvas.hud.token.render();
-        }
-    });
+  game.settings.register(MODULE_ID, 'enableSimpleLight', {
+    name: 'SIMPLELIGHT.Enable',
+    hint: 'SIMPLELIGHT.EnableHint',
+    scope: 'client',
+    config: false,
+    type: Boolean,
+    default: true,
+    onChange: refreshTokenHud
+  });
+
+  game.settings.register(MODULE_ID, 'simpleLightAllowPlayers', {
+    name: 'SIMPLELIGHT.AllowPlayers',
+    hint: 'SIMPLELIGHT.AllowPlayersHint',
+    scope: 'world',
+    config: false,
+    type: Boolean,
+    default: true,
+    onChange: refreshTokenHud
+  });
+
+  game.settings.register(MODULE_ID, LIGHT_CONFIG_SETTING, {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: DEFAULT_LIGHT_CONFIG,
+    onChange: refreshTokenHud
+  });
+});
+
+Hooks.once('ready', () => {
+  const mod = game.modules.get(MODULE_ID);
+  if (mod) {
+    mod.api = {
+      ...(mod.api || {}),
+      simpleLight: {
+        applyLightPreset,
+        addLightTypeMacro,
+        addLightMacro,
+        openSettings: openSimpleLightSettings
+      },
+      addLightTypeMacro,
+      addLightMacro
+    };
+  }
 });
 
 Hooks.on('renderTokenHUD', (hud, html) => {
-    if (game.settings.get(MODULE_ID, 'enableSimpleLight') === false) return;
+  const hudEl = (html instanceof HTMLElement ? html : html?.[0]) || document.getElementById('token-hud');
+  if (!hudEl) return;
 
-    const hudElement = (html instanceof HTMLElement ? html : html?.[0]) || document.getElementById('token-hud');
-    if (!hudElement) return;
+  hudEl.querySelectorAll('[data-pp-hud-button="simple-light"]').forEach(el => el.remove());
 
-    const leftCol = hudElement.querySelector('.col.left') || hudElement.querySelector('.left');
-    if (!leftCol) return;
+  if (!isEnabled() || !canUpdateToken(hud.document)) return;
+  if (game.system.id === 'dnd5e' && hud.actor && !hud.actor.isOwner) return;
 
-    if (leftCol.querySelector('.control-icon[data-action="toggleSimpleLight"]')) return;
+  const leftCol = hudEl.querySelector('.col.left') || hudEl.querySelector('.left');
+  if (!leftCol) return;
 
-    const lightColor = "#422d11";
-    const colorAlpha = 0.5;
+  const presets = getLightPresets();
+  const activeLightId = detectActiveLightId(hud, presets);
+  const doc = hudEl.ownerDocument;
+  const buttonTitle = game.i18n.localize('SIMPLELIGHT.ButtonTitle');
 
-    const lights = [
-        { id: "extinguish", name: "Extinguish", desc: "Bright: 0 ft. Dim: 0 ft.", icon: "icons/svg/light-off.svg", update: { light: { bright: 0, dim: 0, angle: 360, color: null, alpha: 0.25, luminosity: 0.5, attenuation: 0.5, coloration: 10, animation: { type: "none" } } } },
-        { id: "lightCantrip", name: "Light Spell", desc: "Bright: 20 ft. Dim: 40 ft.", icon: "modules/PurplePhoenix-FVTT-Tools/icons/light-spell.svg", update: { light: { bright: 20, dim: 40, angle: 360, color: "#000000", alpha: 0, luminosity: 0.5, coloration: 10, animation: { type: 'none' } } } },
-        { id: "candle", name: "Candle", desc: "Bright: 5 ft. Dim: 10 ft.", icon: "modules/PurplePhoenix-FVTT-Tools/icons/candle.svg", update: { light: { bright: 5, dim: 10, angle: 360, color: lightColor, alpha: colorAlpha, luminosity: 0, coloration: 1, animation: { type: 'torch', speed: 5, intensity: 10 } } } },
-        { id: "lamp", name: "Lamp", desc: "Bright: 15 ft. Dim: 45 ft.", icon: "modules/PurplePhoenix-FVTT-Tools/icons/lamp.svg", update: { light: { bright: 15, dim: 45, angle: 360, color: lightColor, alpha: colorAlpha, luminosity: 0, coloration: 1, animation: { type: 'none' } } } },
-        { id: "lantern", name: "Lantern", desc: "Bright: 30 ft. Dim: 60 ft.", icon: "modules/PurplePhoenix-FVTT-Tools/icons/lantern.svg", update: { light: { bright: 30, dim: 60, angle: 360, color: lightColor, alpha: colorAlpha, luminosity: 0, coloration: 1, animation: { type: 'torch', speed: 3, intensity: 3 } } } },
-        { id: "bullseye", name: "Bullseye", desc: "Bright: 60 ft. Dim: 120 ft. (Cone)", icon: "modules/PurplePhoenix-FVTT-Tools/icons/bullseye.svg", update: { light: { bright: 60, dim: 120, angle: 60, color: lightColor, alpha: colorAlpha, luminosity: 0, coloration: 1, animation: { type: 'none' } } } },
-        { id: "hooded", name: "Hooded", desc: "Bright: 0 ft. Dim: 5 ft.", icon: "modules/PurplePhoenix-FVTT-Tools/icons/hooded.svg", update: { light: { bright: 0, dim: 5, angle: 360, color: lightColor, alpha: colorAlpha, luminosity: 0, coloration: 1, animation: { type: 'none' } } } },
-        { id: "torch", name: "Torch", desc: "Bright: 20 ft. Dim: 40 ft.", icon: "modules/PurplePhoenix-FVTT-Tools/icons/torch.svg", update: { light: { bright: 20, dim: 40, angle: 360, color: lightColor, alpha: colorAlpha, luminosity: 0, coloration: 1, animation: { type: 'torch', speed: 5, intensity: 10 } } } }
-    ];
+  const button = doc.createElement('button');
+  button.type = 'button';
+  button.className = 'control-icon pp-simple-light-button';
+  if (activeLightId && activeLightId !== 'none') button.classList.add('pp-light-lit');
+  button.dataset.ppHudButton = 'simple-light';
+  button.dataset.action = 'togglePalette';
+  button.dataset.palette = 'simple-light';
+  button.dataset.tooltip = buttonTitle;
+  button.setAttribute('aria-label', buttonTitle);
 
-    const docLight = hud.object?.document?.light;
-    let activeLightId = "extinguish";
-    if (docLight) {
-        const b = docLight.bright || 0;
-        const d = docLight.dim || 0;
-        const a = docLight.angle || 360;
-        const animType = docLight.animation?.type || "none";
+  const btnIcon = doc.createElement('img');
+  btnIcon.src = 'icons/svg/light.svg';
+  btnIcon.width = 36;
+  btnIcon.height = 36;
+  btnIcon.alt = '';
+  button.append(btnIcon);
 
-        if (b === 20 && d === 40) {
-            activeLightId = animType === "none" ? "lightCantrip" : "torch";
-        } else if (b === 5 && d === 10) {
-            activeLightId = "candle";
-        } else if (b === 15 && d === 45) {
-            activeLightId = "lamp";
-        } else if (b === 30 && d === 60) {
-            activeLightId = "lantern";
-        } else if (b === 60 && d === 120 && a === 60) {
-            activeLightId = "bullseye";
-        } else if (b === 0 && d === 5) {
-            activeLightId = "hooded";
+  const palette = doc.createElement('div');
+  palette.className = 'palette pp-light-palette';
+  palette.dataset.palette = 'simple-light';
+  palette.dataset.ppHudButton = 'simple-light';
+  palette.setAttribute('aria-label', buttonTitle);
+
+  let busy = false;
+  for (const preset of presets) {
+    const option = doc.createElement('button');
+    option.type = 'button';
+    option.className = 'pp-light-option';
+    if (preset.action === activeLightId) option.classList.add('pp-preset-active');
+    option.dataset.lightPreset = preset.action;
+
+    const meta = formatPresetMeta(preset);
+    const ariaText = `${preset.label} (${meta})`;
+    option.dataset.tooltipText = ariaText;
+    option.setAttribute('aria-label', ariaText);
+
+    const iconWrap = doc.createElement('div');
+    iconWrap.className = 'pp-light-option-icon';
+    const img = doc.createElement('img');
+    img.src = preset.img;
+    img.alt = '';
+    iconWrap.append(img);
+
+    const textWrap = doc.createElement('div');
+    textWrap.className = 'pp-light-option-text';
+    const nameSpan = doc.createElement('span');
+    nameSpan.className = 'pp-light-option-name';
+    nameSpan.textContent = preset.label;
+    const metaSpan = doc.createElement('span');
+    metaSpan.className = 'pp-light-option-meta';
+    metaSpan.textContent = meta;
+    textWrap.append(nameSpan, metaSpan);
+
+    option.append(iconWrap, textWrap);
+    option.addEventListener('click', async event => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (busy) return;
+      busy = true;
+      try {
+        const controlled = canvas.tokens.controlled.map(token => token.document);
+        const targets = controlled.includes(hud.document) ? controlled : [hud.document];
+        // Collapse palette before document updates trigger a HUD re-render.
+        hud.togglePalette?.(null);
+        if (await applyLightPreset(targets, preset.action)) {
+          if (preset.action === 'none') {
+            ui.notifications.info(game.i18n.localize('SIMPLELIGHT.ExtinguishedNotification'));
+          } else {
+            ui.notifications.info(game.i18n.format('SIMPLELIGHT.AppliedNotification', { label: preset.label }));
+          }
         }
-    }
+      } catch (error) {
+        console.error(`${MODULE_ID} | Simple Light`, error);
+        ui.notifications.error(game.i18n.localize('SIMPLELIGHT.Errors.ApplyFailed'));
+      } finally {
+        busy = false;
+      }
+    });
 
-    let paletteItems = "";
-    for (const l of lights) {
-        const isActive = l.id === activeLightId;
-        const activeClass = isActive ? "active" : "";
-        paletteItems += `
-            <a class="simple-light-control ${activeClass}" data-light="${l.id}" style="display: flex; align-items: center; padding: 6px; border-bottom: 1px solid #111; color: #f0f0e0; text-decoration: none;">
-                <div style="flex: 0 0 32px; display: flex; justify-content: center; align-items: center; margin-right: 8px;">
-                    <img src="${l.icon}" style="width: 28px; height: 28px; border: none; filter: drop-shadow(1px 1px 2px black);" />
-                </div>
-                <div style="display: flex; flex-direction: column; line-height: 1.2; text-align: left;">
-                    <span style="font-weight: bold; font-size: 0.95em;">${l.name}</span>
-                    <span style="font-size: 0.75em; color: #b0b0b0;">${l.desc}</span>
-                </div>
-            </a>
-        `;
-    }
+    palette.append(option);
+  }
 
-    if (!document.getElementById('simple-light-style')) {
-        const style = document.createElement('style');
-        style.id = 'simple-light-style';
-        style.innerHTML = `
-            .simple-light-palette { display: none; position: absolute; right: 100%; top: 50%; transform: translateY(-50%); width: 205px; background: rgba(30, 30, 30, 0.9); border: 1px solid var(--color-border-dark-1, #191813); border-radius: 5px; margin-right: 10px; flex-direction: column; z-index: 100; box-shadow: 0 0 10px #000; backdrop-filter: blur(4px); }
-            .simple-light-palette.active { display: flex !important; }
-            .simple-light-control:hover { background: rgba(255, 255, 255, 0.12); cursor: pointer; }
-            .simple-light-control.active { box-shadow: inset 0 0 0 1px var(--color-border-highlight, #ff6400); background: rgba(255, 100, 0, 0.15); }
-        `;
-        document.head.appendChild(style);
-    }
-
-    const title = game.i18n.localize('SIMPLELIGHT.ButtonTitle');
-    const buttonHtml = `
-        <button type="button" class="control-icon" data-action="toggleSimpleLight" data-tooltip="${title}" aria-label="${title}">
-            <img src="icons/svg/light.svg" width="36" height="36" style="pointer-events: none;">
-        </button>
-        <div class="palette simple-light-palette" data-palette="simpleLight">
-            <div style="display: flex; flex-direction: column; max-height: 400px; overflow-y: auto;">
-                ${paletteItems}
-            </div>
-        </div>
-    `;
-
-    const configBtn = leftCol.querySelector('.control-icon[data-action="config"]');
-    if (configBtn) {
-        configBtn.insertAdjacentHTML('beforebegin', buttonHtml);
-    } else {
-        leftCol.insertAdjacentHTML('beforeend', buttonHtml);
-    }
-
-    const lightBtn = leftCol.querySelector('.control-icon[data-action="toggleSimpleLight"]');
-    const palette = leftCol.querySelector('.simple-light-palette');
-
-    if (lightBtn && palette) {
-        lightBtn.addEventListener('pointerdown', (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-
-            const isActive = lightBtn.classList.contains('active');
-
-            // Close native Foundry v13 TokenHUD palettes cleanly
-            hud.togglePalette?.(null);
-            hudElement.querySelectorAll('.control-icon.active').forEach(icon => {
-                if (icon.dataset.action === 'togglePalette' || icon === lightBtn) icon.classList.remove('active');
-            });
-            hudElement.querySelectorAll('.palette').forEach(pal => {
-                pal.classList.remove('active');
-            });
-
-            if (!isActive) {
-                lightBtn.classList.add('active');
-                palette.classList.add('active');
-            }
-        });
-
-        // Close our palette if another palette button in the HUD is clicked
-        hudElement.querySelectorAll('.control-icon[data-action="togglePalette"]').forEach(btn => {
-            btn.addEventListener('pointerdown', () => {
-                lightBtn.classList.remove('active');
-                palette.classList.remove('active');
-            });
-        });
-
-        palette.querySelectorAll('.simple-light-control').forEach(btn => {
-            btn.addEventListener('pointerdown', async (ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-                const lightId = ev.currentTarget.dataset.light;
-                const lightDef = lights.find(l => l.id === lightId);
-                if (lightDef && hud.object?.document) {
-                    await hud.object.document.update(lightDef.update);
-                    palette.classList.remove('active');
-                    lightBtn.classList.remove('active');
-                }
-            });
-        });
-    }
+  const configBtn = leftCol.querySelector('.control-icon[data-action="config"]');
+  if (configBtn) {
+    leftCol.insertBefore(button, configBtn);
+  } else {
+    leftCol.append(button);
+  }
+  leftCol.append(palette);
 });

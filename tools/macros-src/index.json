@@ -1,0 +1,65 @@
+[
+  {
+    "_id": "PPmacroPortrait1",
+    "name": "Open Token Portrait",
+    "slug": "open-token-portrait",
+    "type": "script",
+    "scope": "global",
+    "img": "modules/PurplePhoenix-FVTT-Tools/icons/macros/open-token-portrait.svg",
+    "sort": 100000
+  },
+  {
+    "_id": "PPmacroNameOwnr2",
+    "name": "Display Name: Always for Owner",
+    "slug": "display-name-owner",
+    "type": "script",
+    "scope": "global",
+    "img": "modules/PurplePhoenix-FVTT-Tools/icons/macros/display-name-owner.svg",
+    "sort": 200000
+  },
+  {
+    "_id": "PPmacroNameEvry3",
+    "name": "Display Name: Always for Everyone",
+    "slug": "display-name-everyone",
+    "type": "script",
+    "scope": "global",
+    "img": "modules/PurplePhoenix-FVTT-Tools/icons/macros/display-name-everyone.svg",
+    "sort": 300000
+  },
+  {
+    "_id": "PPmacroPartyInv4",
+    "name": "Open Party Inventory",
+    "slug": "open-party-inventory",
+    "type": "script",
+    "scope": "global",
+    "img": "modules/PurplePhoenix-FVTT-Tools/icons/macros/open-party-inventory.svg",
+    "sort": 400000
+  },
+  {
+    "_id": "PPmacroNumTokns5",
+    "name": "Number Tokens",
+    "slug": "number-tokens",
+    "type": "script",
+    "scope": "global",
+    "img": "modules/PurplePhoenix-FVTT-Tools/icons/macros/number-tokens.svg",
+    "sort": 500000
+  },
+  {
+    "_id": "PPmacroAudioPls6",
+    "name": "Audio to Playlist",
+    "slug": "audio-to-playlist",
+    "type": "script",
+    "scope": "global",
+    "img": "modules/PurplePhoenix-FVTT-Tools/icons/macros/audio-to-playlist.svg",
+    "sort": 600000
+  },
+  {
+    "_id": "PPmacroShowRng70",
+    "name": "Show Ranges",
+    "slug": "show-ranges",
+    "type": "script",
+    "scope": "global",
+    "img": "modules/PurplePhoenix-FVTT-Tools/icons/macros/show-ranges.svg",
+    "sort": 700000
+  }
+]

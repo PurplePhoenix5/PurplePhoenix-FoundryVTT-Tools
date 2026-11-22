@@ -1,0 +1,80 @@
+<section class="pp-light-settings-body">
+  {{#each visibilityTabs}}
+  <section class="tab pp-light-tab {{cssClass}}" data-group="{{group}}" data-tab="{{id}}" data-visibility data-user-id="{{userId}}">
+    <p class="hint">{{#if userId}}{{localize "SIMPLELIGHT.Settings.VisibilityUserHint"}}{{else}}{{localize "SIMPLELIGHT.Settings.VisibilityDefaultHint"}}{{/if}} {{localize "SIMPLELIGHT.Settings.VisibilityGlobalHint"}}</p>
+    {{#each lights}}
+    <fieldset class="pp-light-row {{#unless visible}}pp-light-hidden{{/unless}}" data-row="{{id}}">
+      <div class="pp-light-row-title">
+        <button type="button" class="icon fa-solid {{#if visible}}fa-eye{{else}}fa-eye-slash{{/if}}" data-action="togglePlayerLight" aria-label="{{#if visible}}{{localize "SIMPLELIGHT.Settings.Hide"}}{{else}}{{localize "SIMPLELIGHT.Settings.Show"}}{{/if}} {{name}}" aria-pressed="{{visible}}" data-tooltip="{{#if visible}}{{localize "SIMPLELIGHT.Settings.HideFromPlayerTooltip"}}{{else}}{{localize "SIMPLELIGHT.Settings.ShowInPlayerTooltip"}}{{/if}}"></button>
+        <img class="pp-light-icon-preview" src="{{img}}" alt="">
+        <span>{{name}}</span>
+        {{#if globallyHidden}}<small class="hint">{{localize "SIMPLELIGHT.Settings.HiddenGlobally"}}</small>{{/if}}
+        {{#if ../userId}}
+        <small class="hint">{{#if overridden}}{{localize "SIMPLELIGHT.Settings.Override"}}{{else}}{{localize "SIMPLELIGHT.Settings.PlayerDefault"}}{{/if}}</small>
+        <button type="button" class="icon fa-solid fa-arrow-rotate-left" data-action="resetPlayerLight" aria-label="{{localize "SIMPLELIGHT.Settings.ResetToDefaultAria"}} {{name}}" data-tooltip="{{localize "SIMPLELIGHT.Settings.UsePlayerDefault"}}" {{#unless overridden}}disabled{{/unless}}></button>
+        {{/if}}
+      </div>
+    </fieldset>
+    {{/each}}
+  </section>
+  {{/each}}
+
+  <section class="tab pp-light-tab {{tabs.lights.cssClass}}" data-group="{{tabs.lights.group}}" data-tab="{{tabs.lights.id}}" data-section="lights">
+    {{#each lights}}
+    <fieldset class="pp-light-row {{#unless visible}}pp-light-hidden{{/unless}}" data-row="{{id}}">
+      <div class="pp-light-row-title">
+        <button type="button" class="icon fa-solid {{#if visible}}fa-eye{{else}}fa-eye-slash{{/if}}" data-action="toggleLight" aria-label="{{#if visible}}{{localize "SIMPLELIGHT.Settings.Hide"}}{{else}}{{localize "SIMPLELIGHT.Settings.Show"}}{{/if}} {{name}}" aria-pressed="{{visible}}" data-tooltip="{{#if visible}}{{localize "SIMPLELIGHT.Settings.HideFromPickerTooltip"}}{{else}}{{localize "SIMPLELIGHT.Settings.ShowInPickerTooltip"}}{{/if}}"></button>
+        <img class="pp-light-icon-preview" src="{{img}}" alt="">
+        <input type="text" value="{{name}}" data-field="name" aria-label="{{localize "SIMPLELIGHT.Settings.LightName"}}" required>
+        {{#if custom}}<button type="button" class="icon fa-solid fa-trash" data-action="removeLight" aria-label="{{localize "SIMPLELIGHT.Settings.Remove"}} {{name}}" data-tooltip="{{localize "SIMPLELIGHT.Settings.RemoveLight"}}"></button>{{else}}<span class="hint">{{localize "SIMPLELIGHT.Settings.Default"}}</span><button type="button" class="icon fa-solid fa-arrow-rotate-left" data-action="resetLight" aria-label="{{localize "SIMPLELIGHT.Settings.ResetToDefaultAria"}} {{name}}" data-tooltip="{{localize "SIMPLELIGHT.Settings.ResetToDefault"}}"></button>{{/if}}
+      </div>
+      <div class="pp-light-fields">
+        <label class="pp-wide">{{localize "SIMPLELIGHT.Settings.Type"}}<select data-field="type" aria-label="{{localize "SIMPLELIGHT.Settings.LightType"}}">{{#each types}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}</select></label>
+        <label>{{localize "SIMPLELIGHT.Settings.Bright"}}<input type="number" data-field="bright" value="{{bright}}" min="0" max="1000000" step="0.01" required></label>
+        <label>{{localize "SIMPLELIGHT.Settings.Dim"}}<input type="number" data-field="dim" value="{{dim}}" min="0" max="1000000" step="0.01" required></label>
+        <label>{{localize "SIMPLELIGHT.Settings.Angle"}}<input type="number" data-field="angle" value="{{angle}}" min="0" max="360" step="1" required></label>
+        <label>{{localize "SIMPLELIGHT.Settings.Minutes"}}<input type="number" data-field="minutes" value="{{minutes}}" min="0" max="1000000" step="1" required></label>
+      </div>
+      <div class="pp-light-icon-row">
+        <label class="pp-wide">{{localize "SIMPLELIGHT.Settings.Icon"}}<file-picker type="image" data-field="img" value="{{img}}"></file-picker></label>
+      </div>
+    </fieldset>
+    {{/each}}
+    <button type="button" class="pp-light-add" data-action="addLight"><i class="fa-solid fa-circle-plus" inert></i> {{localize "SIMPLELIGHT.Settings.AddLight"}}</button>
+  </section>
+
+  <section class="tab pp-light-tab {{tabs.types.cssClass}}" data-group="{{tabs.types.group}}" data-tab="{{tabs.types.id}}" data-section="types">
+    {{#each types}}
+    <fieldset class="pp-light-row" data-row="{{id}}">
+      <div class="pp-light-row-title">
+        <i class="fa-solid fa-palette" inert></i>
+        <input type="text" value="{{name}}" data-field="name" aria-label="{{localize "SIMPLELIGHT.Settings.TypeName"}}" required>
+        {{#if custom}}<button type="button" class="icon fa-solid fa-trash" data-action="removeType" aria-label="{{localize "SIMPLELIGHT.Settings.Remove"}} {{name}}" data-tooltip="{{localize "SIMPLELIGHT.Settings.RemoveType"}}"></button>{{else}}<span class="hint">{{localize "SIMPLELIGHT.Settings.Default"}}</span><button type="button" class="icon fa-solid fa-arrow-rotate-left" data-action="resetType" aria-label="{{localize "SIMPLELIGHT.Settings.ResetToDefaultAria"}} {{name}}" data-tooltip="{{localize "SIMPLELIGHT.Settings.ResetToDefault"}}"></button>{{/if}}
+      </div>
+      <div class="pp-type-fields">
+        <label class="pp-wide">{{localize "SIMPLELIGHT.Settings.Colour"}}<color-picker data-field="color" value="{{color}}" placeholder="#ffffff" aria-label="{{localize "SIMPLELIGHT.Settings.Colour"}}"></color-picker></label>
+        <label>{{localize "SIMPLELIGHT.Settings.ColourIntensity"}}<input type="number" data-field="alpha" value="{{alpha}}" min="0" max="1" step="0.05" required></label>
+      </div>
+      <div class="pp-type-animation">
+        <label class="pp-wide">{{localize "SIMPLELIGHT.Settings.Animation"}}<select data-field="animation"><option value="">{{localize "SIMPLELIGHT.Settings.None"}}</option>{{#each animations}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}</select></label>
+        <label>{{localize "SIMPLELIGHT.Settings.Speed"}}<input type="number" data-field="speed" value="{{speed}}" min="0" max="10" step="1" required></label>
+        <label>{{localize "SIMPLELIGHT.Settings.Intensity"}}<input type="number" data-field="intensity" value="{{intensity}}" min="1" max="10" step="1" required></label>
+        <label class="pp-darkness"><input type="checkbox" data-field="negative" {{checked negative}}> {{localize "SIMPLELIGHT.Settings.Darkness"}}</label>
+        <label class="pp-darkness"><input type="checkbox" data-field="advanced" {{checked advanced}}> {{localize "SIMPLELIGHT.Settings.Advanced"}}</label>
+      </div>
+      {{#if advanced}}
+      <fieldset class="pp-type-advanced">
+        <legend>{{localize "SIMPLELIGHT.Settings.AdvancedOptions"}}</legend>
+        <label>{{localize "SIMPLELIGHT.Settings.ColorationTechnique"}}<select data-field="coloration">{{#each colorationTechniques}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}</select></label>
+        <label>{{localize "SIMPLELIGHT.Settings.Luminosity"}}<range-picker data-field="luminosity" value="{{luminosity}}" min="0" max="1" step="0.05"></range-picker></label>
+        <label>{{localize "SIMPLELIGHT.Settings.Attenuation"}}<range-picker data-field="attenuation" value="{{attenuation}}" min="0" max="1" step="0.05"></range-picker></label>
+        <label>{{localize "SIMPLELIGHT.Settings.Saturation"}}<range-picker data-field="saturation" value="{{saturation}}" min="-1" max="1" step="0.05"></range-picker></label>
+        <label>{{localize "SIMPLELIGHT.Settings.Contrast"}}<range-picker data-field="contrast" value="{{contrast}}" min="-1" max="1" step="0.05"></range-picker></label>
+        <label>{{localize "SIMPLELIGHT.Settings.Shadows"}}<range-picker data-field="shadows" value="{{shadows}}" min="0" max="1" step="0.05"></range-picker></label>
+      </fieldset>
+      {{/if}}
+    </fieldset>
+    {{/each}}
+    <button type="button" class="pp-light-add" data-action="addType"><i class="fa-solid fa-circle-plus" inert></i> {{localize "SIMPLELIGHT.Settings.AddType"}}</button>
+  </section>
+</section>

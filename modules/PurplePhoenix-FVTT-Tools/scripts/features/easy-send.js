@@ -267,6 +267,13 @@ function ensureEasySendStyles() {
       line-height: 1.3;
       font-size: 0.92em;
     }
+    .footer-content-right .pp-send-currency-btn,
+    .currency-header .pp-send-currency-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
   `;
   document.head.appendChild(style);
 }
@@ -801,7 +808,7 @@ async function postItemTransferChatMessage({ sourceActor, targetActor, itemData,
     </div>
   `;
   await ChatMessage.create({
-    user: senderUserId || game.user.id,
+    author: senderUserId || game.user.id,
     speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
     content
   });
@@ -824,7 +831,7 @@ async function postCurrencyTransferChatMessage({ sourceActor, targetActor, amoun
     </div>
   `;
   await ChatMessage.create({
-    user: senderUserId || game.user.id,
+    author: senderUserId || game.user.id,
     speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
     content
   });
@@ -925,45 +932,95 @@ Hooks.on('dropCanvasData', (canvasInstance, data) => {
   });
   if (!targetToken?.actor) return;
 
-  fromUuid(data.uuid).then(item => {
+  const resolveUuid = foundry.utils?.fromUuid ?? fromUuid;
+  resolveUuid(data.uuid).then(item => {
     if (!item || !isSendableItem(item)) return;
     if (item.actor.id === targetToken.actor.id) return;
     openEasySendItemDialog(item, targetToken.actor.id);
   });
 });
 
-// 3. Add a quick "Send Currency" button next to the Currency Manager button on D&D 5e Character Sheets
-Hooks.on('renderActorSheetV2', (app, element) => {
+function createSendCurrencyControl(actor, tagName = 'button', className = 'item-action unbutton always-interactive pp-send-currency-btn') {
+  const tooltip = game.i18n.localize('EASYSEND.SendCurrencyTooltip');
+  const el = document.createElement(tagName);
+  if (tagName === 'button') {
+    el.type = 'button';
+  } else {
+    el.setAttribute('role', 'button');
+    el.tabIndex = 0;
+  }
+  el.className = className;
+  el.dataset.tooltip = tooltip;
+  el.setAttribute('aria-label', tooltip);
+  el.innerHTML = '<i class="fa-solid fa-hand-holding-dollar" inert></i>';
+  const trigger = ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    openEasySendCurrencyDialog(actor);
+  };
+  el.addEventListener('click', trigger);
+  if (tagName !== 'button') {
+    el.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter' || ev.key === ' ') trigger(ev);
+    });
+  }
+  return el;
+}
+
+function injectSendCurrencyButton(app, element) {
   try {
     if (!isEasySendEnabled()) return;
-    const actor = app.actor ?? app.document;
+    const actor = app?.actor ?? app?.document;
     if (!actor || !actor.isOwner || actor.type !== 'character') return;
 
     const root = element instanceof HTMLElement ? element : element?.[0];
     if (!root) return;
 
+    ensureEasySendStyles();
+
+    // 1. Standard D&D 5e Character Sheet currency bar
     const currencyContainer = root.querySelector('.inventory-element .currency, section.currency');
-    if (!currencyContainer || currencyContainer.querySelector('.pp-send-currency-btn')) return;
+    if (currencyContainer && !currencyContainer.querySelector('.pp-send-currency-btn')) {
+      const btn = createSendCurrencyControl(
+        actor,
+        'button',
+        'item-action unbutton always-interactive pp-send-currency-btn'
+      );
+      const existingBtn = currencyContainer.querySelector('[data-action="currency"]');
+      if (existingBtn) {
+        existingBtn.insertAdjacentElement('afterend', btn);
+      } else {
+        currencyContainer.prepend(btn);
+      }
+    }
 
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'item-action unbutton always-interactive pp-send-currency-btn';
-    btn.dataset.tooltip = game.i18n.localize('EASYSEND.SendCurrencyTooltip');
-    btn.setAttribute('aria-label', game.i18n.localize('EASYSEND.SendCurrencyTooltip'));
-    btn.innerHTML = '<i class="fa-solid fa-hand-holding-dollar" inert></i>';
-    btn.addEventListener('click', ev => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      openEasySendCurrencyDialog(actor);
-    });
+    // 2. Tidy 5e Sheets (inventory footer / currency header)
+    const currencyActions = root.querySelectorAll('[data-action="currency"]');
+    for (const existingBtn of currencyActions) {
+      if (existingBtn.closest('.inventory-element .currency, section.currency')) continue;
+      const parent = existingBtn.parentElement;
+      if (!parent || parent.querySelector('.pp-send-currency-btn')) continue;
 
-    const existingBtn = currencyContainer.querySelector('[data-action="currency"]');
-    if (existingBtn) {
-      existingBtn.insertAdjacentElement('afterend', btn);
-    } else {
-      currencyContainer.prepend(btn);
+      const isAnchor = existingBtn.tagName === 'A';
+      const control = createSendCurrencyControl(
+        actor,
+        isAnchor ? 'a' : 'button',
+        'button button-icon-only flexshrink pp-send-currency-btn'
+      );
+      existingBtn.insertAdjacentElement('afterend', control);
     }
   } catch (err) {
     console.error(`${MODULE_ID} | Error adding Send Currency button:`, err);
   }
+}
+
+// 3. Add a quick "Send Currency" button next to the Currency Manager button on D&D 5e & Tidy 5e Character Sheets
+Hooks.on('renderActorSheetV2', (app, element) => {
+  injectSendCurrencyButton(app, element);
+  requestAnimationFrame(() => injectSendCurrencyButton(app, app?.element ?? element));
+});
+
+Hooks.on('tidy5e-sheet.selectTab', (app, element) => {
+  injectSendCurrencyButton(app, element ?? app?.element);
+  requestAnimationFrame(() => injectSendCurrencyButton(app, app?.element ?? element));
 });

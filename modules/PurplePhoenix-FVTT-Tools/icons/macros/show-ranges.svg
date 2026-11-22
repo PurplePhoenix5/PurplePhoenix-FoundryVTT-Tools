@@ -1,0 +1,16 @@
+<!--?xml version="1.0" encoding="UTF-8"?-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+
+    <!-- Kreis -->
+    <circle cx="40" cy="40" r="31" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"></circle>
+
+    <!-- Radius (gestrichelt) -->
+    <line x1="40" y1="40" x2="71" y2="40" stroke="#ffffff" stroke-width="3" stroke-dasharray="3 5" stroke-linecap="round"></line>
+
+    <!-- Mittelpunkt -->
+    <rect x="36.5" y="36.5" width="7" height="7" fill="#ffffff"></rect>
+
+    <!-- Endmarkierung -->
+    <rect x="69" y="36.5" width="4" height="7" fill="#ffffff"></rect>
+
+</svg>

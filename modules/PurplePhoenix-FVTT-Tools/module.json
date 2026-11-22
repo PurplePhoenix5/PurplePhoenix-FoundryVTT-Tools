@@ -1,21 +1,34 @@
 {
   "id": "PurplePhoenix-FVTT-Tools",
   "title": "PurplePhoenix FVTT Tools",
-  "description": "A collection of quality-of-life tools for Foundry VTT v13 (D&D 5e): HP & AC in Bar, Easy Temp HP in Token HUD, Better Measure (zoom-independent ruler), Easy Templates (snappy templates & rotatable rectangles), Easy Send (player-to-player item & currency transfer), Simple Light Sources, and Easy Flip Token.",
+  "description": "A collection of quality-of-life tools and utility macros for Foundry VTT v14 (D&D 5e): HP & AC in Bar, Better Measure (zoom-independent ruler), Easy Send (player-to-player item & currency transfer), Simple Light Sources (customizable Token HUD light picker), Easy Flip Token, Show Ranges, Active Effects Manager, Expanded Status Effects HUD, Pause Border, Readable Discarded Dice, and a utility Macro Compendium.",
   "authors": [{ "name": "PurplePhoenix" }],
-  "version": "1.4.0",
+  "version": "2.0.0",
   "compatibility": {
-    "minimum": "13",
-    "verified": "13.350",
-    "maximum": "13"
+    "minimum": "14",
+    "verified": "14.370",
+    "maximum": "14"
   },
   "relationships": {
     "systems": [
       { "id": "dnd5e", "type": "system", "compatibility": {} }
     ]
   },
+  "packs": [
+    {
+      "name": "purplephoenix-macros",
+      "label": "PurplePhoenix Macros",
+      "path": "packs/purplephoenix-macros",
+      "type": "Macro",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    }
+  ],
   "socket": true,
   "esmodules": ["scripts/main.js"],
+  "styles": ["styles/purplephoenix.css"],
   "languages": [
     {
       "lang": "en",
